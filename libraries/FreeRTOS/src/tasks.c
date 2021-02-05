@@ -133,13 +133,18 @@
 
     #define taskSELECT_HIGHEST_PRIORITY_TASK()                                \
     {                                                                         \
-        UBaseType_t uxTopPriority = uxTopReadyPriority;                       \
+        UBaseType_t uxTopPriority = 0;                                        \
                                                                               \
         /* Find the highest priority queue that contains ready tasks. */      \
         while( listLIST_IS_EMPTY( &( pxReadyTasksLists[ uxTopPriority ] ) ) ) \
         {                                                                     \
+            if(uxTopPriority == configMAX_PRIORITIES)                         \
+            {                                                                 \
+                uxTopPriority = 0;                                            \
+            }                                                                 \
+                                                                              \
             configASSERT( uxTopPriority );                                    \
-            --uxTopPriority;                                                  \
+            ++uxTopPriority;                                                  \
         }                                                                     \
                                                                               \
         /* listGET_OWNER_OF_NEXT_ENTRY indexes through the list, so the tasks of \
