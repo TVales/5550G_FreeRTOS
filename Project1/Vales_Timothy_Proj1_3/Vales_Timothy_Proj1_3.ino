@@ -1,9 +1,10 @@
 #include <Arduino_FreeRTOS.h>
 
-//function headers 
+//function headers for tasks
 void TaskMsg1(void *pvParameters);
 void TaskMsg2 (void *pvParameters);
 void TaskBlink (void *pvParameters);
+void vApplicationIdleHook (void); //Idle Task Hook for question 4, can be comented out if needed for grading
 
 void setup() {
   //set up serial communication - 9600 Baud rate 
@@ -60,6 +61,7 @@ void loop() {
 */
 
 //period of 2sec
+//priority of 2
 void TaskMsg1(void *pvParameters) {
   (void) pvParameters;
 
@@ -70,6 +72,7 @@ void TaskMsg1(void *pvParameters) {
 }
 
 //period of 3sec
+//priority of 3
 void TaskMsg2(void *pvParameters) {
   (void) pvParameters;
 
@@ -80,7 +83,8 @@ void TaskMsg2(void *pvParameters) {
 }
 
 //period of 5sec for blinking lights
-//on for 1sec, off for 4sec
+//on for 1sec, off for 4sec to make period == 5sec
+//priority of 1 
 void TaskBlink(void *pvParameters) {
   (void) pvParameters;
 
@@ -90,9 +94,17 @@ void TaskBlink(void *pvParameters) {
   for(;;){
     Serial.println("Task 3: TaskBlink ON");
     digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-    vTaskDelay( 1000 / portTICK_PERIOD_MS ); // wait for 1 second 
+    vTaskDelay( 1000 / portTICK_PERIOD_MS ); // wait for 1 sec - light on 
     Serial.println("Task 3: TaskBlink OFF");
     digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-    vTaskDelay( 4000 / portTICK_PERIOD_MS ); // wait for 4 seconds 
+    vTaskDelay( 4000 / portTICK_PERIOD_MS ); // wait for 4 sec - light off
   }
+}
+
+//DEBUG: Question 4, can be commented out if needed for grading 
+//idle task hook 
+//each cycle of the idle task, this should run. PRINT
+//enabled configUSE_IDLE_HOOK in the FreeRTOSConfig.h file
+void vApplicationIdleHook (void) {
+  Serial.println("IDLE TASK HOOK");
 }
