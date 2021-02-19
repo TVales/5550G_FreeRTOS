@@ -135,6 +135,25 @@ static void prvCreateAllTasks( void );
 	static BaseType_t prvFindEmptyElementIndexTCB( void )
 	{
 		/* your implementation goes here */
+
+		/* variable for indexing through xTCBArray*/
+		UBaseType_t uxIndex;
+
+		/* go through every entry in xTCBArray and find the first empty task */
+		/* return index of empty space, return -1 if no empty space */
+		for( uxIndex = 0; uxIndex < schedMAX_NUMBER_OF_PERIODIC_TASKS; uxIndex++) 
+		{
+			/* xInUse = pdFALSE if it is empty */
+			if ( xTCBArray[ uxIndex ].xInUse = pdFALSE )
+			{
+				return uxIndex;
+			}
+			/* there is no empty entry in xTCBArray*/
+			else
+			{
+				return -1;
+			}
+		}
 	}
 
 	/* Remove a pointer to extended TCB from xTCBArray. */
@@ -212,6 +231,8 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	pxNewTCB->xReleaseTime = xPhaseTick;
 	pxNewTCB->xPeriod = xPeriodTick;
 	
+	pxNewTCB->xMaxExecTime = xMaxExecTimeTick;
+	pxNewTCB->xRelativeDeadline = xDeadlineTick;
     /* Populate the rest */
     /* your implementation goes here */
     
@@ -441,7 +462,7 @@ static void prvSetFixedPriorities( void )
 	}
 
 	/* Called every software tick. */
-	void vApplicationTickHook( void )
+	void vApplicationTickHook( UBaseType_t prioCurrentTask )
 	{            
 		SchedTCB_t *pxCurrentTask;		
 		TaskHandle_t xCurrentTaskHandle;		
