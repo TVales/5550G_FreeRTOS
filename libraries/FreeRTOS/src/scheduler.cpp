@@ -92,8 +92,8 @@ static void prvCreateAllTasks( void );
 #endif /* schedUSE_TCB_ARRAY */
 
 #if( schedUSE_SCHEDULER_TASK )
-	static TickType_t xSchedulerWakeCounter = 0; /* useful. why? */
-	static TaskHandle_t xSchedulerHandle = NULL; /* useful. why? */
+	static TickType_t xSchedulerWakeCounter = 0; /* useful. why? If xSchedulerWakeCounter == schedScheduler_Task_Period reset this to 0 and wake scheduler*/
+	static TaskHandle_t xSchedulerHandle = NULL; /* useful. why? NotifyGiveFromISR calls this to call scheduler*/
 #endif /* schedUSE_SCHEDULER_TASK */
 
 
@@ -160,6 +160,7 @@ static void prvCreateAllTasks( void );
 	static void prvDeleteTCBFromArray( BaseType_t xIndex )
 	{
 		/* your implementation goes here */
+		xTCBArray[ xIndex ] == NULL;
 	}
 	
 #endif /* schedUSE_TCB_ARRAY */
@@ -176,15 +177,17 @@ static void prvPeriodicTaskCode( void *pvParameters )
     /* your implementation goes here */
     
     /* Check the handle is not NULL. */
+	configASSERT(pxThisTask->pxTaskHandle != NULL);
 	
     /* If required, use the handle to obtain further information about the task. */
     /* You may find the following code helpful...
+
 	BaseType_t xIndex;
 	for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 	{
 		
-	}		
-    */
+	}		*/
+    
     
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
         /* your implementation goes here */
@@ -249,6 +252,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
 		/* member initialization */
         /* your implementation goes here */
+		pxNewTCB->xExecutedOnce = pdTRUE;
 	#endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE */
 	
 	#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
