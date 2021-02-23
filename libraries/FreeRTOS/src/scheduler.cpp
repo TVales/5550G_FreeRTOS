@@ -122,6 +122,7 @@ static void prvCreateAllTasks( void );
 	}
 
 	/* Initializes xTCBArray. */
+	/* xTCBArray holds all periodic tasks, SchedTCB_t pxTCB is a single instance of a task*/
 	static void prvInitTCBArray( void )
 	{
 	UBaseType_t uxIndex;
@@ -160,7 +161,6 @@ static void prvCreateAllTasks( void );
 	static void prvDeleteTCBFromArray( BaseType_t xIndex )
 	{
 		/* your implementation goes here */
-		xTCBArray[ xIndex ] == NULL;
 	}
 	
 #endif /* schedUSE_TCB_ARRAY */
@@ -264,7 +264,8 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 		xTaskCounter++;	
 	#endif /* schedUSE_TCB_SORTED_LIST */
 	taskEXIT_CRITICAL();
-  //Serial.println(pxNewTCB->xMaxExecTime);
+  Serial.println(pxNewTCB->pcName);
+  Serial.flush();
 }
 
 /* Deletes a periodic task. */
@@ -297,11 +298,16 @@ static void prvCreateAllTasks( void )
 
 #if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 	/* Initiazes fixed priorities of all periodic tasks with respect to RMS policy. */
+	/*run before scheduler is started to assign priority*/
+	/*not just assigning highest priority, but assigning ALL priorities */
 static void prvSetFixedPriorities( void )
 {
-	BaseType_t xIter, xIndex;
-	TickType_t xShortest, xPreviousShortest=0;
-	SchedTCB_t *pxShortestTaskPointer, *pxTCB;
+	/*index of ask with shortest period. iterate through the array multiple times to assign priorities to ALL tasks*/
+	BaseType_t xIter, xIndex, xAssignIndex;
+	/*var to hold shortest period and the previous shortest*/
+	TickType_t xShortest;
+	/*pointer to task with shortest period and TCB array to access each tasks period*/
+	SchedTCB_t pxTCB;
 
 	#if( schedUSE_SCHEDULER_TASK == 1 )
 		BaseType_t xHighestPriority = schedSCHEDULER_PRIORITY; 
@@ -309,22 +315,35 @@ static void prvSetFixedPriorities( void )
 		BaseType_t xHighestPriority = configMAX_PRIORITIES;
 	#endif /* schedUSE_SCHEDULER_TASK */
 
-	for( xIter = 0; xIter < xTaskCounter; xIter++ )
+	/*sort the array in ASCEDNING ORDER (smallest to greatest period*/
+	for( xIter = 1; xIter < xTaskCounter; xIter++ )
 	{
-		xShortest = portMAX_DELAY;
+		/*set xShortest to temporary value*/
+		pxTCB = xTCBArray[xIter];
+		xShortest = xTCBArray[xIter].xPeriod;
+		xIndex = xIter - 1; 
 
 		/* search for shortest period */
-		for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
+		while( xIndex >= 0 && xShortest <= xTCBArray[xIndex].xPeriod)
 		{
 			/* your implementation goes here */
 			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 				/* your implementation goes here */
+				xTCBArray[xIndex + 1] = xTCBArray[xIndex];
+				xIndex -= 1;
 			#endif /* schedSCHEDULING_POLICY */
 		}
-		
-		/* set highest priority to task with xShortest period (the highest priority is configMAX_PRIORITIES-1) */		
-		
-		/* your implementation goes here */
+
+		xTCBArray[xIndex + 1] = pxTCB;
+		/* your implementation goes here */	
+	}
+
+	/*assign priority from highest to lowest*/
+	/*MIGHT BE ABLE TO MOVE THIS UP TO NESTED FOR LOOP, BUT FIGURE IT OUT LATER*/
+	for( xAssignIndex = 0; xAssignIndex < xTaskCounter; xAssignIndex++ )
+	{
+		xTCBArray[xAssignIndex].uxPriority = xHighestPriority;
+		xHighestPriority -= 1;
 	}
 }
 #endif /* schedSCHEDULING_POLICY */
