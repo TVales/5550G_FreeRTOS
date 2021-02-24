@@ -299,11 +299,11 @@ static void prvCreateAllTasks( void )
 static void prvSetFixedPriorities( void )
 {
 	/*index of ask with shortest period. iterate through the array multiple times to assign priorities to ALL tasks*/
-	BaseType_t xIter, xIndex, xAssignIndex;
+	BaseType_t xIter = 0, xIndex = 0, xAssignIndex;
 	/*var to hold shortest period and the previous shortest*/
 	TickType_t xShortest;
-	/*pointer to task with shortest period and TCB array to access each tasks period*/
-	SchedTCB_t *pxTCB;
+	/*TCB variable to hold temp*/
+	SchedTCB_t pxTCB_temp;
 
 	#if( schedUSE_SCHEDULER_TASK == 1 )
 		BaseType_t xHighestPriority = schedSCHEDULER_PRIORITY; 
@@ -315,10 +315,10 @@ static void prvSetFixedPriorities( void )
 	for( xIter = 1; xIter < xTaskCounter; xIter++ )
 	{
 		/*set xShortest to temporary value*/
-		pxTCB = &xTCBArray[xIter];
+		pxTCB_temp = xTCBArray[xIter];
 		xShortest = xTCBArray[xIter].xPeriod;
 		xIndex = xIter - 1;
-
+		
 		/* search for shortest period */
 		while( xIndex >= 0 && xShortest <= xTCBArray[xIndex].xPeriod)
 		{
@@ -326,11 +326,11 @@ static void prvSetFixedPriorities( void )
 			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 				/* your implementation goes here */
 				xTCBArray[xIndex + 1] = xTCBArray[xIndex];
-				xIndex = xIndex - 1;
+				xIndex--;
 			#endif /* schedSCHEDULING_POLICY */
 		}
 
-		xTCBArray[xIndex + 1] = *pxTCB;
+		xTCBArray[xIndex + 1] = pxTCB_temp;
 		/* your implementation goes here */	
 	}
 
@@ -541,19 +541,11 @@ void vSchedulerInit( void )
  * have been created with API function before calling this function. */
 void vSchedulerStart( void )
 {
+	/*WORKS*/
 	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 		prvSetFixedPriorities();	
 	#endif /* schedSCHEDULING_POLICY */
 
-	for(BaseType_t index = 0; index < 3; index++)
-	{
-		Serial.println(xTCBArray[index].pcName);
-		Serial.flush();
-	}
-
-	Serial.println(xTaskCounter);
-	Serial.flush();
-	/*
 	#if( schedUSE_SCHEDULER_TASK == 1 )
 		prvCreateSchedulerTask();
 	#endif /* schedUSE_SCHEDULER_TASK */ 
