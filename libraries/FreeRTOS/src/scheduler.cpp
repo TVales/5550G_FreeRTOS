@@ -87,7 +87,7 @@ static void prvCreateAllTasks( void );
 #if( schedUSE_TCB_ARRAY == 1 )
 	/* Array for extended TCBs. */
 	static SchedTCB_t xTCBArray[ schedMAX_NUMBER_OF_PERIODIC_TASKS ] = { 0 };
-	/* Counter for number of periodic tasks. */
+	/* Counter for number of periodic tasks. GO BACK TO THIS LATER*/
 	static BaseType_t xTaskCounter = 0;
 #endif /* schedUSE_TCB_ARRAY */
 
@@ -138,23 +138,21 @@ static void prvCreateAllTasks( void );
 		/* your implementation goes here */
 
 		/* variable for indexing through xTCBArray*/
-		UBaseType_t uxIndex;
+		BaseType_t uxIndex;
 
 		/* go through every entry in xTCBArray and find the first empty task */
 		/* return index of empty space, return -1 if no empty space */
 		for( uxIndex = 0; uxIndex < schedMAX_NUMBER_OF_PERIODIC_TASKS; uxIndex++) 
 		{
-			/* xInUse = pdFALSE if it is empty */
-			if ( xTCBArray[ uxIndex ].xInUse = pdFALSE )
+			/* xInUse = pdFALSE, if it is empty */
+			if ( xTCBArray[ uxIndex ].xInUse == pdFALSE )
 			{
 				return uxIndex;
 			}
-			/* there is no empty entry in xTCBArray*/
-			else
-			{
-				return -1;
-			}
 		}
+
+		/* there is no empty entry in xTCBArray*/
+		return -1;
 	}
 
 	/* Remove a pointer to extended TCB from xTCBArray. */
@@ -215,7 +213,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 {
 	taskENTER_CRITICAL();
 	SchedTCB_t *pxNewTCB;
-	
+
 	#if( schedUSE_TCB_ARRAY == 1 )
 		BaseType_t xIndex = prvFindEmptyElementIndexTCB();
 		configASSERT( xTaskCounter < schedMAX_NUMBER_OF_PERIODIC_TASKS );
@@ -238,7 +236,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
     /* your implementation goes here */
 	pxNewTCB->xMaxExecTime = xMaxExecTimeTick;
 	pxNewTCB->xRelativeDeadline = xDeadlineTick;
-    
+
 	#if( schedUSE_TCB_ARRAY == 1 )
 		pxNewTCB->xInUse = pdTRUE;
 	#endif /* schedUSE_TCB_ARRAY */
@@ -252,7 +250,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
 		/* member initialization */
         /* your implementation goes here */
-		pxNewTCB->xExecutedOnce = pdTRUE;
+		pxNewTCB->xExecutedOnce = pdFALSE;
 	#endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE */
 	
 	#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
@@ -264,8 +262,6 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 		xTaskCounter++;	
 	#endif /* schedUSE_TCB_SORTED_LIST */
 	taskEXIT_CRITICAL();
-  Serial.println(pxNewTCB->pcName);
-  Serial.flush();
 }
 
 /* Deletes a periodic task. */
@@ -307,7 +303,7 @@ static void prvSetFixedPriorities( void )
 	/*var to hold shortest period and the previous shortest*/
 	TickType_t xShortest;
 	/*pointer to task with shortest period and TCB array to access each tasks period*/
-	SchedTCB_t pxTCB;
+	SchedTCB_t *pxTCB;
 
 	#if( schedUSE_SCHEDULER_TASK == 1 )
 		BaseType_t xHighestPriority = schedSCHEDULER_PRIORITY; 
@@ -319,9 +315,9 @@ static void prvSetFixedPriorities( void )
 	for( xIter = 1; xIter < xTaskCounter; xIter++ )
 	{
 		/*set xShortest to temporary value*/
-		pxTCB = xTCBArray[xIter];
+		pxTCB = &xTCBArray[xIter];
 		xShortest = xTCBArray[xIter].xPeriod;
-		xIndex = xIter - 1; 
+		xIndex = xIter - 1;
 
 		/* search for shortest period */
 		while( xIndex >= 0 && xShortest <= xTCBArray[xIndex].xPeriod)
@@ -330,11 +326,11 @@ static void prvSetFixedPriorities( void )
 			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 				/* your implementation goes here */
 				xTCBArray[xIndex + 1] = xTCBArray[xIndex];
-				xIndex -= 1;
+				xIndex = xIndex - 1;
 			#endif /* schedSCHEDULING_POLICY */
 		}
 
-		xTCBArray[xIndex + 1] = pxTCB;
+		xTCBArray[xIndex + 1] = *pxTCB;
 		/* your implementation goes here */	
 	}
 
@@ -343,7 +339,7 @@ static void prvSetFixedPriorities( void )
 	for( xAssignIndex = 0; xAssignIndex < xTaskCounter; xAssignIndex++ )
 	{
 		xTCBArray[xAssignIndex].uxPriority = xHighestPriority;
-		xHighestPriority -= 1;
+		xHighestPriority = xHighestPriority - 1;
 	}
 }
 #endif /* schedSCHEDULING_POLICY */
@@ -549,13 +545,23 @@ void vSchedulerStart( void )
 		prvSetFixedPriorities();	
 	#endif /* schedSCHEDULING_POLICY */
 
+	for(BaseType_t index = 0; index < 3; index++)
+	{
+		Serial.println(xTCBArray[index].pcName);
+		Serial.flush();
+	}
+
+	Serial.println(xTaskCounter);
+	Serial.flush();
+	/*
 	#if( schedUSE_SCHEDULER_TASK == 1 )
 		prvCreateSchedulerTask();
-	#endif /* schedUSE_SCHEDULER_TASK */
+	#endif /* schedUSE_SCHEDULER_TASK */ 
 
-	prvCreateAllTasks();
+	/*
+	prvCreateAllTasks(); 
 	  
 	xSystemStartTime = xTaskGetTickCount();
 	
-	vTaskStartScheduler();
+	vTaskStartScheduler(); */
 }
