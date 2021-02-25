@@ -178,13 +178,13 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	configASSERT(pxThisTask->pxTaskHandle != NULL);
 	
     /* If required, use the handle to obtain further information about the task. */
-    /* You may find the following code helpful...
+    /* You may find the following code helpful... */
 
 	BaseType_t xIndex;
 	for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 	{
 		
-	}		*/
+	}		
     
     
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
@@ -237,6 +237,8 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	pxNewTCB->xMaxExecTime = xMaxExecTimeTick;
 	pxNewTCB->xRelativeDeadline = xDeadlineTick;
 
+	pxNewTCB->xAbsoluteDeadline = pxNewTCB->xReleaseTime + pxNewTCB->xRelativeDeadline;
+
 	#if( schedUSE_TCB_ARRAY == 1 )
 		pxNewTCB->xInUse = pdTRUE;
 	#endif /* schedUSE_TCB_ARRAY */
@@ -251,6 +253,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 		/* member initialization */
         /* your implementation goes here */
 		pxNewTCB->xExecutedOnce = pdFALSE;
+		pxNewTCB->xAbsoluteUnblockTime = 0;
 	#endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE */
 	
 	#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
@@ -286,8 +289,7 @@ static void prvCreateAllTasks( void )
 			configASSERT( pdTRUE == xTCBArray[ xIndex ].xInUse );
 			pxTCB = &xTCBArray[ xIndex ];
 
-			BaseType_t xReturnValue = xTaskCreate( pxTCB->pvTaskCode, pxTCB->pcName, pxTCB->uxStackDepth, pxTCB->pvParameters, pxTCB->uxPriority, pxTCB->pxTaskHandle );
-					
+			BaseType_t xReturnValue = xTaskCreate( (TaskFunction_t)prvPeriodicTaskCode, pxTCB->pcName, pxTCB->uxStackDepth, pxTCB->pvParameters, pxTCB->uxPriority, pxTCB->pxTaskHandle );			
 		}	
 	#endif /* schedUSE_TCB_ARRAY */
 }
@@ -295,7 +297,9 @@ static void prvCreateAllTasks( void )
 #if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 	/* Initiazes fixed priorities of all periodic tasks with respect to RMS policy. */
 	/*run before scheduler is started to assign priority*/
-	/*not just assigning highest priority, but assigning ALL priorities */
+	/*not just assigning highest priority, but assigning ALL priorities 
+	
+	FOR NOW ONLY WORKS WITH $ TASKS*/
 static void prvSetFixedPriorities( void )
 {
 	/*index of ask with shortest period. iterate through the array multiple times to assign priorities to ALL tasks*/
@@ -351,10 +355,10 @@ static void prvSetFixedPriorities( void )
 	static void prvPeriodicTaskRecreate( SchedTCB_t *pxTCB )
 	{
 		BaseType_t xReturnValue = xTaskCreate( pxTCB->pvTaskCode, pxTCB->pcName, pxTCB->uxStackDepth, pxTCB->pvParameters, pxTCB->uxPriority, pxTCB->pxTaskHandle );
-				                      		
+          		
 		if( pdPASS == xReturnValue )
 		{
-			/* your implementation goes here */			
+			/* your implementation goes here */	
 		}
 		else
 		{
@@ -374,7 +378,7 @@ static void prvSetFixedPriorities( void )
 		
 		/* Need to reset next WakeTime for correct release. */
 		/* your implementation goes here */
-		
+
 	}
 
 	/* Checks whether given task has missed deadline or not. */
@@ -382,8 +386,7 @@ static void prvSetFixedPriorities( void )
 	{ 
 		/* check whether deadline is missed. */     		
 		/* your implementation goes here */
-		prvDeadlineMissedHook( pxTCB, xTickCount );
-			
+		prvDeadlineMissedHook( pxTCB, xTickCount );	
 	}	
 #endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE */
 
@@ -414,12 +417,10 @@ static void prvSetFixedPriorities( void )
 	static void prvSchedulerCheckTimingError( TickType_t xTickCount, SchedTCB_t *pxTCB )
 	{
 		/* your implementation goes here */
-    
-
 		#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )						
 			/* check if task missed deadline */
             /* your implementation goes here */
-        
+
 			prvCheckDeadline( pxTCB, xTickCount );						
 		#endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE */
 		
@@ -447,19 +448,16 @@ static void prvSetFixedPriorities( void )
 	/* Function code for the scheduler task. */
 	static void prvSchedulerFunction( void *pvParameters )
 	{
-
-    
+		/*using tickCount and task, checks for timing errors*/
 		for( ; ; )
 		{ 
      		#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 || schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
 				TickType_t xTickCount = xTaskGetTickCount();
         		SchedTCB_t *pxTCB;
-        		
+
 				/* your implementation goes here. */			
-				/* You may find the following helpful...
-                    prvSchedulerCheckTimingError( xTickCount, pxTCB );
-                 */
-			
+				/* You may find the following helpful...*/
+                prvSchedulerCheckTimingError( xTickCount, pxTCB );              
 			#endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE || schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME */
 
 			ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
@@ -484,13 +482,15 @@ static void prvSetFixedPriorities( void )
 	}
 
 	/* Called every software tick. */
+	/**/
 	void vApplicationTickHook( UBaseType_t prioCurrentTask )
 	{            
 		SchedTCB_t *pxCurrentTask;		
 		TaskHandle_t xCurrentTaskHandle;		
         UBaseType_t flag = 0;
         BaseType_t xIndex;
-    
+
+		/*if priority of current task is equal to prioCurrenttask, raise flag*/
         for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
         {
       
@@ -500,6 +500,11 @@ static void prvSetFixedPriorities( void )
                 break;
             }
         }
+
+		/*if current task is not scheduler AND current task is not idle task AND flag is 1, then add too execution time 
+		of current task 
+		if current task's MaxExecution time is less than or equal to its execution time, curent tasks MaxExceeded time is false,
+		curent task is not suspended, then the task is blocked and context switch to scheduler*/
 		if( xCurrentTaskHandle != xSchedulerHandle && xCurrentTaskHandle != xTaskGetIdleTaskHandle() && flag == 1)
 		{
 			pxCurrentTask->xExecTime++;     
@@ -518,6 +523,7 @@ static void prvSetFixedPriorities( void )
 			#endif /* schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME */
 		}
 
+		/*if scheduler wake counter is equal to the period of scheduler task, reset wake counter to 0 and wake scheduler*/
 		#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )    
 			xSchedulerWakeCounter++;      
 			if( xSchedulerWakeCounter == schedSCHEDULER_TASK_PERIOD )
@@ -550,10 +556,22 @@ void vSchedulerStart( void )
 		prvCreateSchedulerTask();
 	#endif /* schedUSE_SCHEDULER_TASK */ 
 
-	/*
 	prvCreateAllTasks(); 
-	  
+	 
 	xSystemStartTime = xTaskGetTickCount();
 	
-	vTaskStartScheduler(); */
+	vTaskStartScheduler(); 
 }
+
+/*
+DEBUG
+
+for(BaseType_t index = 0; index < xTaskCounter; index++)
+{
+	Serial.println(xTCBArray[index].pcName);
+	Serial.flush();
+}
+
+Serial.println("HERE");
+Serial.flush();
+*/
