@@ -11,7 +11,7 @@ static void testFunc1( void *pvParameters )
 {
 	(void) pvParameters;
 	int i,a;
-	for( i = 0; i < 10; i++ )
+	for( i = 0; i < 5; i++ )
 	{
 		a = 1 + i*i*i*i;
 	}	
@@ -24,7 +24,7 @@ static void testFunc2( void *pvParameters )
 { 
 	(void) pvParameters;	
 	int i, a;	
-	for(i = 0; i < 10; i++ )
+	for(i = 0; i < 5; i++ )
 	{
 		a = 1 + a * a * i;
 	}	
