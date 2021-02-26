@@ -173,19 +173,20 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	TaskHandle_t xCurrentTaskHandle = xTaskGetCurrentTaskHandle();  
 	
     /* your implementation goes here */
-    
+	BaseType_t index = prvGetTCBIndexFromHandle(xCurrentTaskHandle);
+	pxThisTask = &xTCBArray[index];
+
     /* Check the handle is not NULL. */
 	configASSERT(pxThisTask->pxTaskHandle != NULL);
 	
     /* If required, use the handle to obtain further information about the task. */
-    /* You may find the following code helpful... */
+    /* You may find the following code helpful... 
 
 	BaseType_t xIndex;
 	for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 	{
 		
-	}		
-    
+	}		*/
     
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
         /* your implementation goes here */
@@ -236,6 +237,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
     /* your implementation goes here */
 	pxNewTCB->xMaxExecTime = xMaxExecTimeTick;
 	pxNewTCB->xRelativeDeadline = xDeadlineTick;
+	pxNewTCB->xLastWakeTime = xSystemStartTime;
 
 	pxNewTCB->xAbsoluteDeadline = pxNewTCB->xReleaseTime + pxNewTCB->xRelativeDeadline;
 
@@ -282,14 +284,14 @@ static void prvCreateAllTasks( void )
 
 	#if( schedUSE_TCB_ARRAY == 1 )
 		BaseType_t xIndex;
-
+		
 		/*for every task in TCB array, create the task*/
 		for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 		{
 			configASSERT( pdTRUE == xTCBArray[ xIndex ].xInUse );
 			pxTCB = &xTCBArray[ xIndex ];
 
-			BaseType_t xReturnValue = xTaskCreate( (TaskFunction_t)prvPeriodicTaskCode, pxTCB->pcName, pxTCB->uxStackDepth, pxTCB->pvParameters, pxTCB->uxPriority, pxTCB->pxTaskHandle );			
+			BaseType_t xReturnValue = xTaskCreate((TaskFunction_t)prvPeriodicTaskCode, pxTCB->pcName, pxTCB->uxStackDepth, pxTCB->pvParameters, pxTCB->uxPriority, pxTCB->pxTaskHandle );			
 		}	
 	#endif /* schedUSE_TCB_ARRAY */
 }
@@ -342,7 +344,7 @@ static void prvSetFixedPriorities( void )
 	/*MIGHT BE ABLE TO MOVE THIS UP TO NESTED FOR LOOP, BUT FIGURE IT OUT LATER*/
 	for( xAssignIndex = 0; xAssignIndex < xTaskCounter; xAssignIndex++ )
 	{
-		xTCBArray[xAssignIndex].uxPriority = xHighestPriority;
+		xTCBArray[xAssignIndex].uxPriority = xHighestPriority - 1;
 		xHighestPriority = xHighestPriority - 1;
 	}
 }
@@ -454,7 +456,7 @@ static void prvSetFixedPriorities( void )
      		#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 || schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
 				TickType_t xTickCount = xTaskGetTickCount();
         		SchedTCB_t *pxTCB;
-
+			
 				/* your implementation goes here. */			
 				/* You may find the following helpful...*/
                 prvSchedulerCheckTimingError( xTickCount, pxTCB );              
@@ -482,24 +484,24 @@ static void prvSetFixedPriorities( void )
 	}
 
 	/* Called every software tick. */
-	/**/
-	void vApplicationTickHook( UBaseType_t prioCurrentTask )
+	void vApplicationTickHook( void )
 	{            
 		SchedTCB_t *pxCurrentTask;		
 		TaskHandle_t xCurrentTaskHandle;		
         UBaseType_t flag = 0;
         BaseType_t xIndex;
 
+		Serial.println("HERE");
+		Serial.flush();
 		/*if priority of current task is equal to prioCurrenttask, raise flag*/
-        for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
+        /*for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
         {
-      
             pxCurrentTask = &xTCBArray[ xIndex ];
             if( pxCurrentTask->uxPriority == prioCurrentTask ){
                 flag = 1;
                 break;
             }
-        }
+        }*/
 
 		/*if current task is not scheduler AND current task is not idle task AND flag is 1, then add too execution time 
 		of current task 
@@ -551,16 +553,16 @@ void vSchedulerStart( void )
 	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 		prvSetFixedPriorities();	
 	#endif /* schedSCHEDULING_POLICY */
-
-	#if( schedUSE_SCHEDULER_TASK == 1 )
-		prvCreateSchedulerTask();
+	
+	#if( schedUSE_SCHEDULER_TASK == 1 ) 
+		/*prvCreateSchedulerTask();*/
 	#endif /* schedUSE_SCHEDULER_TASK */ 
 
 	prvCreateAllTasks(); 
-	 
+	
 	xSystemStartTime = xTaskGetTickCount();
 	
-	vTaskStartScheduler(); 
+	vTaskStartScheduler();
 }
 
 /*
