@@ -176,6 +176,8 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	BaseType_t index = prvGetTCBIndexFromHandle(xCurrentTaskHandle);
 	pxThisTask = &xTCBArray[index];
 
+	pxThisTask->xLastWakeTime = xTaskGetTickCount();
+
     /* Check the handle is not NULL. */
 	configASSERT(pxThisTask->pxTaskHandle != NULL);
 	
@@ -186,7 +188,7 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 	{
 		
-	}		*/
+	}	*/	
     
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
         /* your implementation goes here */
@@ -201,10 +203,12 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	{	
 		/* Execute the task function specified by the user. */
 		pxThisTask->pvTaskCode( pvParameters );
-				
+		
 		pxThisTask->xExecTime = 0;   
+
+		pxThisTask->xReleaseTime += pxThisTask->xPeriod;
         
-		xTaskDelayUntil( pxThisTask->xLastWakeTime, pxThisTask->xPeriod);
+		BaseType_t xReturnValue = xTaskDelayUntil( &pxThisTask->xLastWakeTime, pxThisTask->xPeriod);
 	}
 }
 
@@ -237,7 +241,9 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
     /* your implementation goes here */
 	pxNewTCB->xMaxExecTime = xMaxExecTimeTick;
 	pxNewTCB->xRelativeDeadline = xDeadlineTick;
-	pxNewTCB->xLastWakeTime = xSystemStartTime;
+	pxNewTCB->xLastWakeTime = 0;
+	pxNewTCB->xExecTime = 0;
+	pxNewTCB->xWorkIsDone = pdFALSE;
 
 	pxNewTCB->xAbsoluteDeadline = pxNewTCB->xReleaseTime + pxNewTCB->xRelativeDeadline;
 
@@ -428,11 +434,13 @@ static void prvSetFixedPriorities( void )
 		
 
 		#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
+		/*if max execution time exceeded, suspend te task*/
         if( pdTRUE == pxTCB->xMaxExecTimeExceeded )
         {
             pxTCB->xMaxExecTimeExceeded = pdFALSE;
             vTaskSuspend( *pxTCB->pxTaskHandle );
         }
+		/*if the task is suspended and absolute unblock time - tick count since scheduler was started <= 0, resume task*/
         if( pdTRUE == pxTCB->xSuspended )
         {
             if( ( signed ) ( pxTCB->xAbsoluteUnblockTime - xTickCount ) <= 0 )
@@ -490,26 +498,27 @@ static void prvSetFixedPriorities( void )
 		TaskHandle_t xCurrentTaskHandle;		
         UBaseType_t flag = 0;
         BaseType_t xIndex;
+		BaseType_t prioCurrentTask;
 
-		Serial.println("HERE");
-		Serial.flush();
+		xCurrentTaskHandle = xTaskGetCurrentTaskHandle();
+		prioCurrentTask = uxTaskPriorityGet(xCurrentTaskHandle);
+
 		/*if priority of current task is equal to prioCurrenttask, raise flag*/
-        /*for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
+		/* check if this is a user task running*/
+        for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
         {
             pxCurrentTask = &xTCBArray[ xIndex ];
             if( pxCurrentTask->uxPriority == prioCurrentTask ){
                 flag = 1;
                 break;
             }
-        }*/
+        }
 
-		/*if current task is not scheduler AND current task is not idle task AND flag is 1, then add too execution time 
-		of current task 
-		if current task's MaxExecution time is less than or equal to its execution time, curent tasks MaxExceeded time is false,
-		curent task is not suspended, then the task is blocked and context switch to scheduler*/
+		/*if user task is running, increase exec time of task by 1*/
+		/*check that the max exec time of task is not exceeded*/
 		if( xCurrentTaskHandle != xSchedulerHandle && xCurrentTaskHandle != xTaskGetIdleTaskHandle() && flag == 1)
 		{
-			pxCurrentTask->xExecTime++;     
+			pxCurrentTask->xExecTime++;  
      
 			#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
             if( pxCurrentTask->xMaxExecTime <= pxCurrentTask->xExecTime )
@@ -527,7 +536,9 @@ static void prvSetFixedPriorities( void )
 
 		/*if scheduler wake counter is equal to the period of scheduler task, reset wake counter to 0 and wake scheduler*/
 		#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )    
-			xSchedulerWakeCounter++;      
+			xSchedulerWakeCounter++;  
+
+			/*pdMS_to_ticks (100) == 6*/
 			if( xSchedulerWakeCounter == schedSCHEDULER_TASK_PERIOD )
 			{
 				xSchedulerWakeCounter = 0;        
@@ -553,7 +564,7 @@ void vSchedulerStart( void )
 	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 		prvSetFixedPriorities();	
 	#endif /* schedSCHEDULING_POLICY */
-	
+
 	#if( schedUSE_SCHEDULER_TASK == 1 ) 
 		/*prvCreateSchedulerTask();*/
 	#endif /* schedUSE_SCHEDULER_TASK */ 
@@ -561,7 +572,7 @@ void vSchedulerStart( void )
 	prvCreateAllTasks(); 
 	
 	xSystemStartTime = xTaskGetTickCount();
-	
+
 	vTaskStartScheduler();
 }
 
