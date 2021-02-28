@@ -11,7 +11,8 @@ static void testFunc1( void *pvParameters )
 {
 	(void) pvParameters;
 	int i,a;
-	for( i = 0; i < 5; i++ )
+  
+	for( i = 0; i < 10; i++ )
 	{
 		a = 1 + i*i*i*i;
 	}	
@@ -24,7 +25,7 @@ static void testFunc2( void *pvParameters )
 { 
 	(void) pvParameters;	
 	int i, a;	
-	for(i = 0; i < 5; i++ )
+	for(i = 0; i < 10; i++ )
 	{
 		a = 1 + a * a * i;
 	}	
@@ -32,13 +33,12 @@ static void testFunc2( void *pvParameters )
   Serial.flush();
 }
 
-
 //my own function
 static void testFunc3( void *pvParameters )
 { 
   (void) pvParameters;  
   int i, a; 
-  for(i = 0; i < 5; i++ )
+  for(i = 0; i < 100; i++ )
   {
     a = 1 + i;
   } 
@@ -51,7 +51,7 @@ static void testFunc4( void *pvParameters )
 { 
   (void) pvParameters;  
   int i, a; 
-  for(i = 0; i < 10; i++ )
+  for(i = 0; i < 100; i++ )
   {
     a = 1 + a * i;
   } 
