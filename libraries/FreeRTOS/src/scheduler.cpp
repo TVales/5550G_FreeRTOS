@@ -59,7 +59,7 @@ static void prvPeriodicTaskCode( void *pvParameters );
 static void prvCreateAllTasks( void );
 
 
-#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS)
+#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_DM)
 	static void prvSetFixedPriorities( void );	
 #endif /* schedSCHEDULING_POLICY_RMS */
 
@@ -205,6 +205,7 @@ static void prvPeriodicTaskCode( void *pvParameters )
 		
 		pxThisTask->xExecTime = 0;   
 
+		/* dereference pxThisTask->xLastWakeTime to make it work*/
 		BaseType_t xReturnValue = xTaskDelayUntil(&pxThisTask->xLastWakeTime, pxThisTask->xPeriod);
 	}
 }
@@ -248,7 +249,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 		pxNewTCB->xInUse = pdTRUE;
 	#endif /* schedUSE_TCB_ARRAY */
 	
-	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
+	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_DM )
 		/* member initialization */
         /* your implementation goes here */
 		pxNewTCB->xPriorityIsSet = pdFALSE; 
@@ -299,12 +300,11 @@ static void prvCreateAllTasks( void )
 	#endif /* schedUSE_TCB_ARRAY */
 }
 
-#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
-	/* Initiazes fixed priorities of all periodic tasks with respect to RMS policy. */
+#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_DM )
+	/* Initializes fixed priorities of all periodic tasks with respect to RMS policy. */
 	/*run before scheduler is started to assign priority*/
-	/*not just assigning highest priority, but assigning ALL priorities 
-	
-	FOR NOW ONLY WORKS WITH $ TASKS*/
+	/*not just assigning highest priority, but assigning ALL priorities */
+
 static void prvSetFixedPriorities( void )
 {
 	/*index of ask with shortest period. iterate through the array multiple times to assign priorities to ALL tasks*/
@@ -323,6 +323,8 @@ static void prvSetFixedPriorities( void )
 	/*sort the array in ASCEDNING ORDER (smallest to greatest period*/
 	for( xIter = 1; xIter < xTaskCounter; xIter++ )
 	{
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
+
 		/*set xShortest to temporary value*/
 		pxTCB_temp = xTCBArray[xIter];
 		xShortest = xTCBArray[xIter].xPeriod;
@@ -331,13 +333,25 @@ static void prvSetFixedPriorities( void )
 		/* search for shortest period */
 		while( xIndex >= 0 && xShortest <= xTCBArray[xIndex].xPeriod)
 		{
-			/* your implementation goes here */
-			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
-				/* your implementation goes here */
-				xTCBArray[xIndex + 1] = xTCBArray[xIndex];
-				xIndex--;
-			#endif /* schedSCHEDULING_POLICY */
+			xTCBArray[xIndex + 1] = xTCBArray[xIndex];
+			xIndex--;
 		}
+		#endif /* schedSCHEDULING_POLICY */
+
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_DM )
+
+		pxTCB_temp = xTCBArray[xIter];
+		xShortest = xTCBArray[xIter].xRelativeDeadline;
+		xIndex = xIter - 1;
+
+		/* search for shortest relative deadline */
+		while( xIndex >= 0 && xShortest <= xTCBArray[xIndex].xRelativeDeadline)
+		{
+			xTCBArray[xIndex + 1] = xTCBArray[xIndex];
+			xIndex--;
+		}
+		
+		#endif /* schedSCHEDULING_POLICY */
 
 		xTCBArray[xIndex + 1] = pxTCB_temp;
 		/* your implementation goes here */	
@@ -576,7 +590,7 @@ void vSchedulerInit( void )
 void vSchedulerStart( void )
 {
 	/*WORKS*/
-	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
+	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_DM )
 		prvSetFixedPriorities();	
 	#endif /* schedSCHEDULING_POLICY */
 
