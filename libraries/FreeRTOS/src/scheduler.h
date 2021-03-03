@@ -39,7 +39,7 @@ extern "C" {
 /* Set this define to 1 to enable Timing-Error-Detection for detecting tasks
  * that have missed their deadlines. Tasks that have missed their deadlines
  * will be deleted, recreated and restarted during next period. */
-#define schedUSE_TIMING_ERROR_DETECTION_DEADLINE 0
+#define schedUSE_TIMING_ERROR_DETECTION_DEADLINE 1
 
 /* Set this define to 1 to enable Timing-Error-Detection for detecting tasks
  * that have exceeded their worst-case execution time. Tasks that have exceeded
