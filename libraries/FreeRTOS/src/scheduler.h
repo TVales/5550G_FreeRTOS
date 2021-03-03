@@ -26,11 +26,15 @@
 extern "C" {
 #endif
 
-/* The scheduling policy can be chosen from one of these. */
-#define schedSCHEDULING_POLICY_RMS 1 		/* Rate-monotonic scheduling */
+/* The scheduling policy can be chosen from one of these. 
+	Either schedSCHEDULING_POLICY_RMS or schedSCHEDULING_POLICY_DM must be 1, but not both at the same time*/
+#define schedSCHEDULING_POLICY_RMS 1		/* Rate-monotonic scheduling */
 
-/* Configure scheduling policy by setting this define to the appropriate one. */
-#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_RMS //schedSCHEDULING_POLICY_EDF
+#define schedSCHEDULING_POLICY_DM 0 		/* Deadline Monotonic Scheduling */
+
+/* Configure scheduling policy by setting this define to the appropriate one. 
+	Change this with the policy of your choice above */
+#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_RMS
 
 /* Maximum number of periodic tasks that can be created. (Scheduler task is
  * not included) */
