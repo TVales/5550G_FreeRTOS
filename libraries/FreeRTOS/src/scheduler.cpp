@@ -44,7 +44,6 @@ typedef struct xExtended_TCB
 } SchedTCB_t;
 
 
-
 #if( schedUSE_TCB_ARRAY == 1 )
 	static BaseType_t prvGetTCBIndexFromHandle( TaskHandle_t xTaskHandle );
 	static void prvInitTCBArray( void );
@@ -206,9 +205,7 @@ static void prvPeriodicTaskCode( void *pvParameters )
 		
 		pxThisTask->xExecTime = 0;   
 
-		pxThisTask->xReleaseTime += pxThisTask->xPeriod;
-        
-		BaseType_t xReturnValue = xTaskDelayUntil( &pxThisTask->xLastWakeTime, pxThisTask->xPeriod);
+		BaseType_t xReturnValue = xTaskDelayUntil(&pxThisTask->xLastWakeTime, pxThisTask->xPeriod);
 	}
 }
 
@@ -245,7 +242,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	pxNewTCB->xExecTime = 0;
 	pxNewTCB->xWorkIsDone = pdFALSE;
 
-	pxNewTCB->xAbsoluteDeadline = pxNewTCB->xReleaseTime + pxNewTCB->xRelativeDeadline;
+	pxNewTCB->xAbsoluteDeadline = 0 ;
 
 	#if( schedUSE_TCB_ARRAY == 1 )
 		pxNewTCB->xInUse = pdTRUE;
@@ -366,7 +363,8 @@ static void prvSetFixedPriorities( void )
           		
 		if( pdPASS == xReturnValue )
 		{
-			/* your implementation goes here */	
+			/* your implementation goes here */
+
 		}
 		else
 		{
@@ -383,10 +381,10 @@ static void prvSetFixedPriorities( void )
 		vTaskDelete( *pxTCB->pxTaskHandle );
 		pxTCB->xExecTime = 0;
 		prvPeriodicTaskRecreate( pxTCB );	
-		
+
 		/* Need to reset next WakeTime for correct release. */
 		/* your implementation goes here */
-
+		pxTCB->xLastWakeTime = xTaskGetTickCount();
 	}
 
 	/* Checks whether given task has missed deadline or not. */
@@ -428,8 +426,14 @@ static void prvSetFixedPriorities( void )
 		#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )						
 			/* check if task missed deadline */
             /* your implementation goes here */
-
-			prvCheckDeadline( pxTCB, xTickCount );						
+			if(xTickCount > (pxTCB->xLastWakeTime + pxTCB->xRelativeDeadline))
+			{
+				Serial.print("Deadline Missed: ");
+				Serial.flush();
+				Serial.println(pxTCB->pcName);
+				Serial.flush();
+				prvCheckDeadline( pxTCB, xTickCount );	
+			}					
 		#endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE */
 		
 
@@ -464,10 +468,17 @@ static void prvSetFixedPriorities( void )
      		#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 || schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
 				TickType_t xTickCount = xTaskGetTickCount();
         		SchedTCB_t *pxTCB;
-			
-				/* your implementation goes here. */			
-				/* You may find the following helpful...*/
-                prvSchedulerCheckTimingError( xTickCount, pxTCB );              
+
+				/* your implementation goes here. */
+				for(BaseType_t index = 0; index < xTaskCounter; index++)
+				{
+					pxTCB = &xTCBArray[index];
+
+					if( xTickCount >= (pxTCB->xLastWakeTime + pxTCB->xRelativeDeadline) || pxTCB->xMaxExecTimeExceeded == pdTRUE)
+					{
+						prvSchedulerCheckTimingError( xTickCount, pxTCB );   
+					}
+				}			          
 			#endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE || schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME */
 
 			ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
@@ -521,12 +532,16 @@ static void prvSetFixedPriorities( void )
 			pxCurrentTask->xExecTime++;  
      
 			#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
-            if( pxCurrentTask->xMaxExecTime <= pxCurrentTask->xExecTime )
+            if( pxCurrentTask->xMaxExecTime < pxCurrentTask->xExecTime )
             {
                 if( pdFALSE == pxCurrentTask->xMaxExecTimeExceeded )
                 {
                     if( pdFALSE == pxCurrentTask->xSuspended )
                     {
+						Serial.print("Task Max Exec Time Exceeded: ");
+						Serial.flush();
+						Serial.println(pxCurrentTask->pcName);
+						Serial.flush();
                         prvExecTimeExceedHook( xTaskGetTickCountFromISR(), pxCurrentTask );
                     }
                 }
@@ -566,9 +581,10 @@ void vSchedulerStart( void )
 	#endif /* schedSCHEDULING_POLICY */
 
 	#if( schedUSE_SCHEDULER_TASK == 1 ) 
-		/*prvCreateSchedulerTask();*/
+		prvCreateSchedulerTask();
 	#endif /* schedUSE_SCHEDULER_TASK */ 
 
+	/*works*/
 	prvCreateAllTasks(); 
 	
 	xSystemStartTime = xTaskGetTickCount();
