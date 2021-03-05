@@ -28,13 +28,13 @@ extern "C" {
 
 /* The scheduling policy can be chosen from one of these. 
 	Either schedSCHEDULING_POLICY_RMS or schedSCHEDULING_POLICY_DM must be 1, but not both at the same time*/
-#define schedSCHEDULING_POLICY_RMS 1		/* Rate-monotonic scheduling */
+#define schedSCHEDULING_POLICY_RMS 0		/* Rate-monotonic scheduling */
 
-#define schedSCHEDULING_POLICY_DM 0 		/* Deadline Monotonic Scheduling */
+#define schedSCHEDULING_POLICY_DM 1		/* Deadline Monotonic Scheduling */
 
 /* Configure scheduling policy by setting this define to the appropriate one. 
 	Change this with the policy of your choice above */
-#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_RMS
+#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_DM
 
 /* Maximum number of periodic tasks that can be created. (Scheduler task is
  * not included) */
@@ -56,6 +56,10 @@ extern "C" {
 * Timing-Error-Detection of deadline, Polling Server. */
 #define schedUSE_SCHEDULER_TASK 1
 
+/*Set this define to 1 to enable augmentations to scheduler. 
+Scheduling overhead is augmented to be a lot larger to see the effects of it on the tasks deadlines misses*/
+#define schedScheduler_Overhead 0
+
 
 #if( schedUSE_SCHEDULER_TASK == 1 )
 	/* Priority of the scheduler task. */
@@ -63,7 +67,7 @@ extern "C" {
 	/* Stack size of the scheduler task. */
 	#define schedSCHEDULER_TASK_STACK_SIZE 200 
 	/* The period of the scheduler task in software ticks. */
-	#define schedSCHEDULER_TASK_PERIOD pdMS_TO_TICKS( 100 )	
+	#define schedSCHEDULER_TASK_PERIOD pdMS_TO_TICKS( 50 )	
 #endif /* schedUSE_SCHEDULER_TASK */
 
 /* This function must be called before any other function call from scheduler.h. */
