@@ -243,7 +243,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	pxNewTCB->xExecTime = 0;
 	pxNewTCB->xWorkIsDone = pdFALSE;
 
-	pxNewTCB->xAbsoluteDeadline = 0 ;
+	pxNewTCB->xAbsoluteDeadline = 0;
 
 	#if( schedUSE_TCB_ARRAY == 1 )
 		pxNewTCB->xInUse = pdTRUE;
@@ -452,7 +452,7 @@ static void prvSetFixedPriorities( void )
 		
 
 		#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
-		/*if max execution time exceeded, suspend te task*/
+		/*if max execution time exceeded, suspend the task*/
         if( pdTRUE == pxTCB->xMaxExecTimeExceeded )
         {
             pxTCB->xMaxExecTimeExceeded = pdFALSE;
@@ -488,8 +488,26 @@ static void prvSetFixedPriorities( void )
 				{
 					pxTCB = &xTCBArray[index];
 
-					if( xTickCount >= (pxTCB->xLastWakeTime + pxTCB->xRelativeDeadline) || pxTCB->xMaxExecTimeExceeded == pdTRUE)
+					if( xTickCount > (pxTCB->xLastWakeTime + pxTCB->xRelativeDeadline) || pxTCB->xMaxExecTimeExceeded == pdTRUE)
 					{
+						/*Adding scheduler overhead for when the scheduler sees a missed deadline
+						Change the value in the for loop to see the effects of increased or decreased delay*/
+						#if(schedScheduler_Overhead)
+							volatile TickType_t i, j;
+
+							i = xTaskGetTickCount();
+
+							while (1)
+							{
+								j = xTaskGetTickCount();
+
+								if ((j - i) >= pdMS_TO_TICKS(1000))
+								{
+									break;
+								}
+							}
+						#endif
+
 						prvSchedulerCheckTimingError( xTickCount, pxTCB );   
 					}
 				}			          
@@ -546,7 +564,7 @@ static void prvSetFixedPriorities( void )
 			pxCurrentTask->xExecTime++;  
      
 			#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
-            if( pxCurrentTask->xMaxExecTime < pxCurrentTask->xExecTime )
+            if( pxCurrentTask->xMaxExecTime + 1 < pxCurrentTask->xExecTime )
             {
                 if( pdFALSE == pxCurrentTask->xMaxExecTimeExceeded )
                 {
@@ -600,7 +618,7 @@ void vSchedulerStart( void )
 
 	/*works*/
 	prvCreateAllTasks(); 
-	
+
 	xSystemStartTime = xTaskGetTickCount();
 
 	vTaskStartScheduler();
