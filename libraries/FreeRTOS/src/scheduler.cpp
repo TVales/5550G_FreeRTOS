@@ -174,8 +174,9 @@ static void prvPeriodicTaskCode( void *pvParameters )
     /* your implementation goes here */
 	BaseType_t index = prvGetTCBIndexFromHandle(xCurrentTaskHandle);
 	pxThisTask = &xTCBArray[index];
-
-	pxThisTask->xLastWakeTime = xTaskGetTickCount();
+	
+	//last wake time == absolute release time of task
+	pxThisTask->xLastWakeTime = pxThisTask->xLastWakeTime + pxThisTask->xPeriod;
 
     /* Check the handle is not NULL. */
 	configASSERT(pxThisTask->pxTaskHandle != NULL);
@@ -373,16 +374,15 @@ static void prvSetFixedPriorities( void )
 	/* Recreates a deleted task that still has its information left in the task array (or list). */
 	static void prvPeriodicTaskRecreate( SchedTCB_t *pxTCB )
 	{
-		BaseType_t xReturnValue = xTaskCreate( pxTCB->pvTaskCode, pxTCB->pcName, pxTCB->uxStackDepth, pxTCB->pvParameters, pxTCB->uxPriority, pxTCB->pxTaskHandle );
+		BaseType_t xReturnValue = xTaskCreate((TaskFunction_t)prvPeriodicTaskCode, pxTCB->pcName, pxTCB->uxStackDepth, pxTCB->pvParameters, pxTCB->uxPriority, pxTCB->pxTaskHandle );
           		
 		if( pdPASS == xReturnValue )
 		{
 			/* your implementation goes here */
-
 		}
 		else
 		{
-			/* if task creation failed */
+			/* if task creation failed */ 		
 		}
 	}
 
@@ -398,7 +398,7 @@ static void prvSetFixedPriorities( void )
 
 		/* Need to reset next WakeTime for correct release. */
 		/* your implementation goes here */
-		pxTCB->xLastWakeTime = xTaskGetTickCount();
+		pxTCB->xLastWakeTime += pxTCB->xPeriod;
 	}
 
 	/* Checks whether given task has missed deadline or not. */
@@ -491,7 +491,7 @@ static void prvSetFixedPriorities( void )
 					if( xTickCount > (pxTCB->xLastWakeTime + pxTCB->xRelativeDeadline) || pxTCB->xMaxExecTimeExceeded == pdTRUE)
 					{
 						/*Adding scheduler overhead for when the scheduler sees a missed deadline
-						Change the value in the for loop to see the effects of increased or decreased delay*/
+						Change the value in the for loop to see the effects of increased delay*/
 						#if(schedScheduler_Overhead)
 							volatile TickType_t i, j;
 
