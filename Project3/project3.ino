@@ -15,9 +15,9 @@ TaskHandle_t xHandle4 = NULL;
                 Task 3 = 200
                 Task 4 = 150 */
 TickType_t WCET_1 = pdMS_TO_TICKS(100);
-TickType_t WCET_2 = pdMS_TO_TICKS(150);
-TickType_t WCET_3 = pdMS_TO_TICKS(200);
-TickType_t WCET_4 = pdMS_TO_TICKS(150);
+TickType_t WCET_2 = pdMS_TO_TICKS(200);
+TickType_t WCET_3 = pdMS_TO_TICKS(150);
+TickType_t WCET_4 = pdMS_TO_TICKS(300);
 
 
 void loop() {}
@@ -119,7 +119,7 @@ int main( void )
 
   //1 = Task Set 1
   //2 = task Set 2
-  int TaskSet = 2;
+  int TaskSet = 1;
 
   //set up serial comms with board 
   Serial.begin(9600);
@@ -140,7 +140,7 @@ int main( void )
       //Task Set #1
       //                           Function   Name      StackSize            Param Prio Handle   Phase             Period           Max Exec Time     Deadline
       vSchedulerPeriodicTaskCreate(testFunc1, "t1", configMINIMAL_STACK_SIZE, &c1, 1, &xHandle1, pdMS_TO_TICKS(0), pdMS_TO_TICKS(400), WCET_1, pdMS_TO_TICKS(400));
-      vSchedulerPeriodicTaskCreate(testFunc2, "t2", configMINIMAL_STACK_SIZE, &c2, 2, &xHandle2, pdMS_TO_TICKS(0), pdMS_TO_TICKS(800), WCET_2, pdMS_TO_TICKS(700));
+      vSchedulerPeriodicTaskCreate(testFunc2, "t2", configMINIMAL_STACK_SIZE, &c2, 2, &xHandle2, pdMS_TO_TICKS(0), pdMS_TO_TICKS(700), WCET_2, pdMS_TO_TICKS(700));
       vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_3, pdMS_TO_TICKS(1000));
       vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(5000), WCET_4, pdMS_TO_TICKS(5000));
       break;
@@ -148,8 +148,8 @@ int main( void )
     case 2:
       //Task Set #2
       vSchedulerPeriodicTaskCreate(testFunc1, "t1", configMINIMAL_STACK_SIZE, &c1, 1, &xHandle1, pdMS_TO_TICKS(0), pdMS_TO_TICKS(400), WCET_1, pdMS_TO_TICKS(400));
-      vSchedulerPeriodicTaskCreate(testFunc2, "t2", configMINIMAL_STACK_SIZE, &c2, 2, &xHandle2, pdMS_TO_TICKS(0), pdMS_TO_TICKS(500), WCET_2, pdMS_TO_TICKS(200));
-      vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(800), WCET_3, pdMS_TO_TICKS(700));
+      vSchedulerPeriodicTaskCreate(testFunc2, "t2", configMINIMAL_STACK_SIZE, &c2, 2, &xHandle2, pdMS_TO_TICKS(0), pdMS_TO_TICKS(200), WCET_2, pdMS_TO_TICKS(200));
+      vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(700), WCET_3, pdMS_TO_TICKS(700));
       vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_4, pdMS_TO_TICKS(1000));
       break;
   }
