@@ -63,6 +63,10 @@ static void prvCreateAllTasks( void );
 	static void prvSetFixedPriorities( void );	
 #endif /* schedSCHEDULING_POLICY_RMS */
 
+#if (schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF)
+	static void prvFindClosestDeadline( void );
+#endif
+
 #if( schedUSE_SCHEDULER_TASK == 1 )
 	static void prvSchedulerCheckTimingError( TickType_t xTickCount, SchedTCB_t *pxTCB );
 	static void prvSchedulerFunction( void );
@@ -176,7 +180,7 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	pxThisTask = &xTCBArray[index];
 	
 	//last wake time == absolute release time of task
-	pxThisTask->xLastWakeTime = pxThisTask->xLastWakeTime + pxThisTask->xPeriod;
+	pxThisTask->xLastWakeTime = xTaskGetTickCount();
 
     /* Check the handle is not NULL. */
 	configASSERT(pxThisTask->pxTaskHandle != NULL);
@@ -187,8 +191,9 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	BaseType_t xIndex;
 	for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 	{
-		
-	}	*/	
+	}	*/
+
+	pxThisTask->xAbsoluteDeadline = pxThisTask->xLastWakeTime + pxThisTask->xPeriod;
     
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
         /* your implementation goes here */
@@ -244,6 +249,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	pxNewTCB->xExecTime = 0;
 	pxNewTCB->xWorkIsDone = pdFALSE;
 
+	pxNewTCB->xPriorityIsSet = pdFALSE; 
 	pxNewTCB->xAbsoluteDeadline = 0;
 
 	#if( schedUSE_TCB_ARRAY == 1 )
@@ -253,7 +259,6 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_DM )
 		/* member initialization */
         /* your implementation goes here */
-		pxNewTCB->xPriorityIsSet = pdFALSE; 
 	#endif /* schedSCHEDULING_POLICY */
 	
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
@@ -473,7 +478,30 @@ static void prvSetFixedPriorities( void )
 		return;
 	}
 
-	/* Function code for the scheduler task. */
+	/*INPUT: TickCount 
+	  OUTPUT: nothing. Assigns the highest priroity to task with closest deadline.  
+	  Check all absolute deadlines in tasks in xTCBArray and compares all of them to see which one is closest to the tick now*/
+	static void prvFindClosestDeadline( void )
+	{
+		SchedTCB_t *pxTCB;
+		TickType_t xClosestDeadline = xTCBArray[0].xAbsoluteDeadline;
+
+		for(BaseType_t index = 1; index < xTaskCounter; index)
+		{
+			pxTCB = &xTCBArray[index];
+
+			if(pxTCB->xAbsoluteDeadline > xClosestDeadline)
+			{
+				xClosestDeadline = pxTCB->xAbsoluteDeadline;	
+			} 
+
+			Serial.println(xClosestDeadline);
+			Serial.flush();
+		}
+	}
+
+	/* Function code for the scheduler task. 
+	   Continuously calculate deadline in scheduler function */
 	static void prvSchedulerFunction( void *pvParameters )
 	{
 		/*using tickCount and task, checks for timing errors*/
@@ -482,6 +510,7 @@ static void prvSetFixedPriorities( void )
      		#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 || schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
 				TickType_t xTickCount = xTaskGetTickCount();
         		SchedTCB_t *pxTCB;
+				TickType_t ClosestDeadline = 0;
 
 				/* your implementation goes here. */
 				for(BaseType_t index = 0; index < xTaskCounter; index++)

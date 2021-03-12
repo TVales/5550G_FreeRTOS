@@ -27,14 +27,20 @@ extern "C" {
 #endif
 
 /* The scheduling policy can be chosen from one of these. 
-	Either schedSCHEDULING_POLICY_RMS or schedSCHEDULING_POLICY_DM must be 1, but not both at the same time*/
-#define schedSCHEDULING_POLICY_RMS 1		/* Rate-monotonic scheduling */
+	Either schedSCHEDULING_POLICY_RMS or schedSCHEDULING_POLICY_DM must be 1, but not both at the same time */
+#define schedSCHEDULING_POLICY_RMS 0		/* Rate-monotonic scheduling */
 
 #define schedSCHEDULING_POLICY_DM 0		/* Deadline Monotonic Scheduling */
 
+/* Scheduling policy can be chosen from one of these. 
+	Either schedSCHEDULING_POLICY_EDF OR schedSCHEDULING_POLICY_HVDF must be 1, but not both at the same time */
+#define schedSCHEDULING_POLICY_EDF 1
+
+#define schedSCHEDULING_POLICY_HVDF 0
+
 /* Configure scheduling policy by setting this define to the appropriate one. 
 	Change this with the policy of your choice above */
-#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_RMS
+#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_EDF
 
 /* Maximum number of periodic tasks that can be created. (Scheduler task is
  * not included) */
@@ -48,7 +54,7 @@ extern "C" {
 /* Set this define to 1 to enable Timing-Error-Detection for detecting tasks
  * that have exceeded their worst-case execution time. Tasks that have exceeded
  * their worst-case execution time will be preempted until next period. */
-#define schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME 1
+#define schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME 0
 
 /* Set this define to 1 to enable the scheduler task. This define must be set to 1
 * when using following features:
