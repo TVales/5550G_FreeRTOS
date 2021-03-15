@@ -522,8 +522,7 @@ static void prvSetFixedPriorities( void )
 	/* Creates the scheduler task. */
 	static void prvCreateSchedulerTask( void )
 	{
-		xTaskCreate( (TaskFunction_t) prvSchedulerFunction, "Scheduler", schedSCHEDULER_TASK_STACK_SIZE, NULL, schedSCHEDULER_PRIORITY, &xSchedulerHandle );
-	
+		xTaskCreate( (TaskFunction_t) prvSchedulerFunction, "Scheduler", schedSCHEDULER_TASK_STACK_SIZE, NULL, schedSCHEDULER_PRIORITY, &xSchedulerHandle );	
 	}
 #endif /* schedUSE_SCHEDULER_TASK */
 
@@ -561,12 +560,10 @@ static void prvSetFixedPriorities( void )
     
 		if( xCurrentTaskHandle != xSchedulerHandle && xCurrentTaskHandle != xTaskGetIdleTaskHandle() && flag == 1)
 		{
-			
-			
 			pxCurrentTask->xExecTime++;     
      
 			#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
-            if( pxCurrentTask->xMaxExecTime <= pxCurrentTask->xExecTime )
+            if( pxCurrentTask->xMaxExecTime < pxCurrentTask->xExecTime )
             {
                 if( pdFALSE == pxCurrentTask->xMaxExecTimeExceeded )
                 {
@@ -616,3 +613,15 @@ void vSchedulerStart( void )
 	
 	vTaskStartScheduler();
 }
+
+/*
+for(BaseType_t xIndex = 0; xIndex < xTaskCounter; xIndex++)
+{
+	Serial.println();
+	Serial.flush();
+}
+
+Serial.println();
+Serial.flush(); 
+
+*/
