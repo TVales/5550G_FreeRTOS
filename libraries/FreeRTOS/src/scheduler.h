@@ -54,7 +54,7 @@ extern "C" {
 /* Set this define to 1 to enable Timing-Error-Detection for detecting tasks
  * that have exceeded their worst-case execution time. Tasks that have exceeded
  * their worst-case execution time will be preempted until next period. */
-#define schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME 0
+#define schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME 1
 
 /* Set this define to 1 to enable the scheduler task. This define must be set to 1
 * when using following features:

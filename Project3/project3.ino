@@ -104,7 +104,7 @@ static void testFunc4( void *pvParameters )
     {
       break;
     }
-  }
+  } 
 
   Serial.println("Task 4 Done");
   Serial.flush();
@@ -142,7 +142,7 @@ int main( void )
       vSchedulerPeriodicTaskCreate(testFunc1, "t1", configMINIMAL_STACK_SIZE, &c1, 1, &xHandle1, pdMS_TO_TICKS(0), pdMS_TO_TICKS(400), WCET_1, pdMS_TO_TICKS(400));
       vSchedulerPeriodicTaskCreate(testFunc2, "t2", configMINIMAL_STACK_SIZE, &c2, 2, &xHandle2, pdMS_TO_TICKS(0), pdMS_TO_TICKS(700), WCET_2, pdMS_TO_TICKS(700));
       vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_3, pdMS_TO_TICKS(1000));
-      vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(5000), WCET_4, pdMS_TO_TICKS(5000));
+      //vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(5000), WCET_4, pdMS_TO_TICKS(5000));
       break;
 
     case 2:

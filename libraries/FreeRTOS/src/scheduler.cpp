@@ -64,7 +64,7 @@ static void prvCreateAllTasks( void );
 #endif /* schedSCHEDULING_POLICY_RMS */
 
 #if (schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF)
-	static void prvFindClosestDeadline( void );
+	static void prvFindClosestDeadline( SchedTCB_t *pxTCB );
 #endif
 
 #if( schedUSE_SCHEDULER_TASK == 1 )
@@ -192,8 +192,6 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	for( xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 	{
 	}	*/
-
-	pxThisTask->xAbsoluteDeadline = pxThisTask->xLastWakeTime + pxThisTask->xPeriod;
     
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
         /* your implementation goes here */
@@ -206,13 +204,18 @@ static void prvPeriodicTaskCode( void *pvParameters )
 
 	for( ; ; )
 	{	
+		pxThisTask->xAbsoluteDeadline = pxThisTask->xLastWakeTime + pxThisTask->xPeriod;
+		
 		/* Execute the task function specified by the user. */
 		pxThisTask->pvTaskCode( pvParameters );
 		
 		pxThisTask->xExecTime = 0;   
 
 		/* dereference pxThisTask->xLastWakeTime to make it work*/
-		BaseType_t xReturnValue = xTaskDelayUntil(&pxThisTask->xLastWakeTime, pxThisTask->xPeriod);
+		BaseType_t xReturnValue = xTaskDelayUntil(&pxThisTask->xLastWakeTime, pxThisTask->xPeriod);	
+
+		/*Set the priority back to 0 after the task finishes */
+		vTaskPrioritySet(pxThisTask->pxTaskHandle, 0);
 	}
 }
 
@@ -387,7 +390,8 @@ static void prvSetFixedPriorities( void )
 		}
 		else
 		{
-			/* if task creation failed */ 		
+			/* if task creation failed */
+			configASSERT(xReturnValue); 		
 		}
 	}
 
@@ -479,24 +483,21 @@ static void prvSetFixedPriorities( void )
 	}
 
 	/*INPUT: TickCount 
-	  OUTPUT: nothing. Assigns the highest priroity to task with closest deadline.  
+	  OUTPUT: nothing. Assigns the highest priority to task with closest deadline.  
 	  Check all absolute deadlines in tasks in xTCBArray and compares all of them to see which one is closest to the tick now*/
-	static void prvFindClosestDeadline( void )
+	static void prvFindClosestDeadline( SchedTCB_t *pxTCB )
 	{
-		SchedTCB_t *pxTCB;
 		TickType_t xClosestDeadline = xTCBArray[0].xAbsoluteDeadline;
-
+	
 		for(BaseType_t index = 1; index < xTaskCounter; index)
 		{
 			pxTCB = &xTCBArray[index];
 
 			if(pxTCB->xAbsoluteDeadline > xClosestDeadline)
 			{
-				xClosestDeadline = pxTCB->xAbsoluteDeadline;	
+				xClosestDeadline = pxTCB->xAbsoluteDeadline;		
+				vTaskPrioritySet(pxTCB->pxTaskHandle, 3);
 			} 
-
-			Serial.println(xClosestDeadline);
-			Serial.flush();
 		}
 	}
 
@@ -513,6 +514,8 @@ static void prvSetFixedPriorities( void )
 				TickType_t ClosestDeadline = 0;
 
 				/* your implementation goes here. */
+				prvFindClosestDeadline();
+				
 				for(BaseType_t index = 0; index < xTaskCounter; index++)
 				{
 					pxTCB = &xTCBArray[index];
