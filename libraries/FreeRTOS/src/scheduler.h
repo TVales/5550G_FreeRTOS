@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /* The scheduling policy can be chosen from one of these. */
-//#define schedSCHEDULING_POLICY_RMS 1 		
+#define schedSCHEDULING_POLICY_RMS 1 		
 /* Rate-monotonic scheduling */
 
 /* Configure scheduling policy by setting this define to the appropriate one. */
