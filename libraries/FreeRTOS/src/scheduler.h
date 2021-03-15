@@ -26,22 +26,13 @@
 extern "C" {
 #endif
 
-/* The scheduling policy can be chosen from one of these. 
-	Either schedSCHEDULING_POLICY_RMS or schedSCHEDULING_POLICY_DM must be 1, but not both at the same time */
-#define schedSCHEDULING_POLICY_RMS 0		/* Rate-monotonic scheduling */
+/* The scheduling policy can be chosen from one of these. */
+//#define schedSCHEDULING_POLICY_RMS 1 		
+/* Rate-monotonic scheduling */
 
-#define schedSCHEDULING_POLICY_DM 0		/* Deadline Monotonic Scheduling */
-
-/* Scheduling policy can be chosen from one of these. 
-	Either schedSCHEDULING_POLICY_EDF OR schedSCHEDULING_POLICY_HVDF must be 1, but not both at the same time */
-#define schedSCHEDULING_POLICY_EDF 1
-
-#define schedSCHEDULING_POLICY_HVDF 0
-
-/* Configure scheduling policy by setting this define to the appropriate one. 
-	Change this with the policy of your choice above */
-#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_EDF
-
+/* Configure scheduling policy by setting this define to the appropriate one. */
+#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_RMS 
+//schedSCHEDULING_POLICY_EDF
 /* Maximum number of periodic tasks that can be created. (Scheduler task is
  * not included) */
 #define schedMAX_NUMBER_OF_PERIODIC_TASKS 5
@@ -62,14 +53,10 @@ extern "C" {
 * Timing-Error-Detection of deadline, Polling Server. */
 #define schedUSE_SCHEDULER_TASK 1
 
-/*Set this define to 1 to enable augmentations to scheduler. 
-Scheduling overhead is augmented to be a lot larger to see the effects of it on the tasks deadlines misses*/
-#define schedScheduler_Overhead 0
-
 
 #if( schedUSE_SCHEDULER_TASK == 1 )
 	/* Priority of the scheduler task. */
-	#define schedSCHEDULER_PRIORITY ( configMAX_PRIORITIES - 1)
+	#define schedSCHEDULER_PRIORITY ( configMAX_PRIORITIES - 1 )
 	/* Stack size of the scheduler task. */
 	#define schedSCHEDULER_TASK_STACK_SIZE 200 
 	/* The period of the scheduler task in software ticks. */
