@@ -39,9 +39,6 @@ static void testFunc1( void *pvParameters )
       break;
     }
   }
-
-  //Serial.println("Task 1 Done");
-  //Serial.flush();
 }
 
 static void testFunc2( void *pvParameters )
@@ -61,9 +58,6 @@ static void testFunc2( void *pvParameters )
       break;
     }
   }
-
-  //Serial.println("Task 2 Done");
-  //Serial.flush();
 }
 
 static void testFunc3( void *pvParameters )
@@ -83,9 +77,6 @@ static void testFunc3( void *pvParameters )
       break;
     }
   }
-
-  //Serial.println("Task 3 Done");
-  //Serial.flush();
 }
 
 static void testFunc4( void *pvParameters )
@@ -105,9 +96,6 @@ static void testFunc4( void *pvParameters )
       break;
     }
   } 
-
-  //Serial.println("Task 4 Done");
-  //Serial.flush();
 }
 
 int main( void )
@@ -141,8 +129,8 @@ int main( void )
       //                           Function   Name      StackSize            Param Prio Handle   Phase             Period           Max Exec Time     Deadline
       vSchedulerPeriodicTaskCreate(testFunc1, "t1", configMINIMAL_STACK_SIZE, &c1, 1, &xHandle1, pdMS_TO_TICKS(0), pdMS_TO_TICKS(400), WCET_1, pdMS_TO_TICKS(400));
       vSchedulerPeriodicTaskCreate(testFunc2, "t2", configMINIMAL_STACK_SIZE, &c2, 2, &xHandle2, pdMS_TO_TICKS(0), pdMS_TO_TICKS(700), WCET_2, pdMS_TO_TICKS(700));
-      vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_3, pdMS_TO_TICKS(1000));
-      vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(5000), WCET_4, pdMS_TO_TICKS(5000));
+      //vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_3, pdMS_TO_TICKS(1000));
+      //vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(5000), WCET_4, pdMS_TO_TICKS(5000));
       break;
 
     case 2:

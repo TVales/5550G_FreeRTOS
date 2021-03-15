@@ -198,13 +198,16 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	{	
 		pxThisTask->xWorkIsDone = pdFALSE;
 		Serial.print(pxThisTask->pcName);
-		Serial.print(" - ");
-		Serial.print(xTaskGetTickCount());
-		Serial.print("\n");
+		Serial.print(" Released - ");
+		Serial.println(xTaskGetTickCount());
 		Serial.flush();
 		pxThisTask->pvTaskCode( pvParameters );
 		pxThisTask->xWorkIsDone = pdTRUE;
 		pxThisTask->xExecTime = 0;  
+		Serial.print(pxThisTask->pcName);
+		Serial.print(" Done - ");
+		Serial.println(xTaskGetTickCount());
+		Serial.flush();
         
 		xTaskDelayUntil(&pxThisTask->xLastWakeTime, pxThisTask->xPeriod);
 	}
@@ -563,7 +566,7 @@ static void prvSetFixedPriorities( void )
 			pxCurrentTask->xExecTime++;     
      
 			#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
-            if( pxCurrentTask->xMaxExecTime < pxCurrentTask->xExecTime )
+            if( pxCurrentTask->xMaxExecTime + 3 < pxCurrentTask->xExecTime )
             {
                 if( pdFALSE == pxCurrentTask->xMaxExecTimeExceeded )
                 {
