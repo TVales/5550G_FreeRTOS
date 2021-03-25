@@ -1,4 +1,4 @@
-#include "scheduler.h"
+ #include "scheduler.h"
 
 TaskHandle_t xHandle1 = NULL;
 TaskHandle_t xHandle2 = NULL;
@@ -129,8 +129,8 @@ int main( void )
       //                           Function   Name      StackSize            Param Prio Handle   Phase             Period           Max Exec Time     Deadline
       vSchedulerPeriodicTaskCreate(testFunc1, "t1", configMINIMAL_STACK_SIZE, &c1, 1, &xHandle1, pdMS_TO_TICKS(0), pdMS_TO_TICKS(400), WCET_1, pdMS_TO_TICKS(400));
       vSchedulerPeriodicTaskCreate(testFunc2, "t2", configMINIMAL_STACK_SIZE, &c2, 2, &xHandle2, pdMS_TO_TICKS(0), pdMS_TO_TICKS(700), WCET_2, pdMS_TO_TICKS(700));
-      //vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_3, pdMS_TO_TICKS(1000));
-      //vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(5000), WCET_4, pdMS_TO_TICKS(5000));
+      vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_3, pdMS_TO_TICKS(1000));
+      vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(5000), WCET_4, pdMS_TO_TICKS(5000));
       break;
 
     case 2:
