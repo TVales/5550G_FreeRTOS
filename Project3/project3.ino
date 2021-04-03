@@ -14,10 +14,20 @@ TaskHandle_t xHandle4 = NULL;
                 Task 2 = 150
                 Task 3 = 200
                 Task 4 = 150 */
+/*Task Set 1*/
+/*
 TickType_t WCET_1 = pdMS_TO_TICKS(100);
 TickType_t WCET_2 = pdMS_TO_TICKS(200);
 TickType_t WCET_3 = pdMS_TO_TICKS(150);
 TickType_t WCET_4 = pdMS_TO_TICKS(300);
+*/
+
+/*Task Set 2*/
+
+TickType_t WCET_1 = pdMS_TO_TICKS(100);
+TickType_t WCET_2 = pdMS_TO_TICKS(150);
+TickType_t WCET_3 = pdMS_TO_TICKS(200);
+TickType_t WCET_4 = pdMS_TO_TICKS(150);
 
 
 void loop() {}
@@ -107,7 +117,7 @@ int main( void )
 
   //1 = Task Set 1
   //2 = task Set 2
-  int TaskSet = 1;
+  int TaskSet = 2;
 
   //set up serial comms with board 
   Serial.begin(9600);
