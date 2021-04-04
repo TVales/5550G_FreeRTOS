@@ -218,10 +218,11 @@ static void prvPeriodicTaskCode( void *pvParameters )
 		pxThisTask->xExecTime = 0;  
 		pxThisTask->xAbsoluteDeadline = pxThisTask->xLastWakeTime + pxThisTask->xRelativeDeadline;
 
-		/*Because it's placed after WorkIsDone = pdTRUE, prvPrioritySet will nto consider this task*/
+		/*Because it's placed after WorkIsDone = pdTRUE, prvPrioritySet will not consider this task*/
 		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
 			prvPrioritySet();
 		#endif 
+		
         
 		xTaskDelayUntil(&pxThisTask->xLastWakeTime, pxThisTask->xPeriod);  
 	}
@@ -428,7 +429,7 @@ static void prvSetFixedPriorities( void )
 	}
 
 	/* Checks whether given task has missed deadline or not. */
-	/* Absolute deadlines of all tasks are being updated here. If the task has not run during the period of th scheduler
+	/* Absolute deadlines of all tasks are being updated here. If the task has not run during the period of the scheduler
 	the abs deadline of the task will be updated here */
 	static void prvCheckDeadline( SchedTCB_t *pxTCB, TickType_t xTickCount )
 	{ 
@@ -436,14 +437,14 @@ static void prvSetFixedPriorities( void )
 		/* your implementation goes here */
 
 		if((pxTCB->xWorkIsDone==pdFALSE)&&(pxTCB->xExecutedOnce==pdTRUE)){ 
-			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF ) 
-				prvPrioritySet(); 
-			#endif 
 			pxTCB->xAbsoluteDeadline = pxTCB->xLastWakeTime + pxTCB->xRelativeDeadline; 
 			if(pxTCB->xAbsoluteDeadline < xTickCount){ 
 				prvDeadlineMissedHook(pxTCB, xTickCount); 
 			} 
 		} 
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF ) 
+			prvPrioritySet(); 
+		#endif 
 	} 
 #endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE */
 
@@ -639,16 +640,14 @@ void vSchedulerInit( void )
 
 		for(BaseType_t xIndex = 0; xIndex < xTaskCounter; xIndex++)
 		{
+			/*set all tasks to 1 priority to make make sure that they are starting from the same place*/
 			vTaskPrioritySet(*xTCBArray[xIndex].pxTaskHandle, 1);
-		}
 
-		for(BaseType_t xIndex = 0; xIndex < xTaskCounter; xIndex++)
-		{
-			/* if there's a deadline smaller than the largest item in the array, set smallest to that one and take index of it.
-			Keep going until the end of the list */
-
+			/* if there's a deadline smaller than the largest absolute deadline in the array (so it scales 
+			with the tick count), set smallest to that one and take index of it. 
+			Keep going until the end of the xTCBArray */ 
 			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF )
-				if((xTCBArray[xIndex].xAbsoluteDeadline <= xSmallestAbsDeadline) && (xTCBArray[xIndex].xWorkIsDone == pdFALSE))
+				if((xTCBArray[xIndex].xAbsoluteDeadline <= xSmallestAbsDeadline)) /*&& (xTCBArray[xIndex].xWorkIsDone == pdFALSE))*/
 				{
 					xSmallestAbsDeadline = xTCBArray[xIndex].xAbsoluteDeadline;
 					xIndexOfSmallestAbsDeadline = xIndex;
@@ -660,7 +659,7 @@ void vSchedulerInit( void )
 		vTaskPrioritySet(*xTCBArray[xIndexOfSmallestAbsDeadline].pxTaskHandle, xHighestPrio);
 
 		/*
-		Serial.print(xTCBArray[xIndexOfSmallestAbsDeadline].pcName); 
+		Serial.println(xTCBArray[xIndexOfSmallestAbsDeadline].pcName); 
 		Serial.flush();*/
 	}
 
