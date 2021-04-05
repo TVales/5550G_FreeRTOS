@@ -40,6 +40,12 @@ typedef struct xExtended_TCB
 	#endif /* schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME */
 	
 	/* add if you need anything else */	
+
+	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
+		TickType_t xRemainingWCET; /*Set to max exec time and incremented every tick of task. Then, compared when needed.*/
+		float xDensity; /* Density = Value / Remaining WCET */
+		float xValue; /* Value given to task from task set */
+	#endif
 	
 } SchedTCB_t;
 
@@ -60,9 +66,9 @@ static void prvPeriodicTaskCode( void *pvParameters );
 static void prvCreateAllTasks( void );
 
 #if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
-	void prvPrioritySet( void );
-	void prvAssignInitialPriority ( void );
-	static TickType_t prvFindLargestValue ( void );
+	void prvPrioritySet( void ); /* used by EDF and HVDF */
+	static TickType_t prvFindLargestValue ( void ); /* Used by EDF*/
+	void prvSetInitialPriority ( void );
 #endif
 
 #if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS)
@@ -209,6 +215,7 @@ static void prvPeriodicTaskCode( void *pvParameters )
 
 		Serial.print(pxThisTask->pcName);
 		Serial.print(" Start - ");
+		Serial.flush();
 		Serial.println(xTaskGetTickCount());
 		Serial.flush();
 
@@ -216,9 +223,13 @@ static void prvPeriodicTaskCode( void *pvParameters )
 		pxThisTask->pvTaskCode( pvParameters );
 		pxThisTask->xWorkIsDone = pdTRUE;
 		pxThisTask->xExecTime = 0;  
+
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
+		pxThisTask->xRemainingWCET = pxThisTask->xMaxExecTime; /*Set this back to max value at the end so next time it runs it is at max value */
+		#endif
+
 		pxThisTask->xAbsoluteDeadline = pxThisTask->xLastWakeTime + pxThisTask->xRelativeDeadline;
 
-		/*Because it's placed after WorkIsDone = pdTRUE, prvPrioritySet will not consider this task*/
 		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
 			prvPrioritySet();
 		#endif 
@@ -230,7 +241,7 @@ static void prvPeriodicTaskCode( void *pvParameters )
 
 /* Creates a periodic task. */
 void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName, UBaseType_t uxStackDepth, void *pvParameters, UBaseType_t uxPriority,
-		TaskHandle_t *pxCreatedTask, TickType_t xPhaseTick, TickType_t xPeriodTick, TickType_t xMaxExecTimeTick, TickType_t xDeadlineTick )
+		TaskHandle_t *pxCreatedTask, TickType_t xPhaseTick, TickType_t xPeriodTick, TickType_t xMaxExecTimeTick, TickType_t xDeadlineTick, float xTaskValue )
 {
 	taskENTER_CRITICAL();
 	SchedTCB_t *pxNewTCB;
@@ -258,7 +269,6 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	pxNewTCB->xWorkIsDone = pdFALSE;
 	pxNewTCB->xExecTime = 0;
 	pxNewTCB->xMaxExecTime = xMaxExecTimeTick;
-	pxNewTCB->xPriorityIsSet = pdFALSE;
 
 	#if( schedUSE_TCB_ARRAY == 1 )
 		pxNewTCB->xInUse = pdTRUE;
@@ -266,7 +276,14 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	
 	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 		/* member initialization */
+		pxNewTCB->xPriorityIsSet = pdFALSE;
 	#endif /* schedSCHEDULING_POLICY */
+
+	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
+		pxNewTCB->xRemainingWCET = xMaxExecTimeTick;
+		pxNewTCB->xValue = xTaskValue;
+		pxNewTCB->xDensity = pxNewTCB->xValue / pxNewTCB->xRemainingWCET;
+	#endif
 	
 	#if( schedUSE_TIMING_ERROR_DETECTION_DEADLINE == 1 )
 		/* member initialization */
@@ -282,7 +299,8 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 		xTaskCounter++;	
 	#endif /* schedUSE_TCB_SORTED_LIST */
 	taskEXIT_CRITICAL();
-  //Serial.println(pxNewTCB->xMaxExecTime);
+  /*Serial.println(pxNewTCB->xDensity);
+  Serial.flush();*/
 }
 
 /* Deletes a periodic task. */
@@ -310,10 +328,10 @@ static void prvCreateAllTasks( void )
 				Serial.print(pxTCB->pcName);
 				Serial.print(", Period- ");
 				Serial.print(pxTCB->xPeriod);
-				/*Serial.print(", Released at- ");
-				Serial.print(pxTCB->xReleaseTime);*/
+				Serial.print(", Released at- ");
+				Serial.print(pxTCB->xReleaseTime);
 				Serial.print(", Priority- ");
-				Serial.print(pxTCB->uxPriority);	
+				Serial.print(pxTCB->uxPriority); 
 				Serial.print(", WCET- ");
 				Serial.print(pxTCB->xMaxExecTime);
 				Serial.print(", Deadline- ");
@@ -340,6 +358,7 @@ static void prvSetFixedPriorities( void )
 
 	#if( schedUSE_SCHEDULER_TASK == 1 )
 		BaseType_t xHighestPriority = schedSCHEDULER_PRIORITY; 
+		xHighestPriority--;
 	#else
 		BaseType_t xHighestPriority = configMAX_PRIORITIES;
 	#endif /* schedUSE_SCHEDULER_TASK */
@@ -426,6 +445,10 @@ static void prvSetFixedPriorities( void )
 		pxTCB->xReleaseTime = pxTCB->xLastWakeTime + pxTCB->xPeriod;
 		pxTCB->xLastWakeTime = xTickCount;
 		pxTCB->xAbsoluteDeadline = pxTCB->xRelativeDeadline + pxTCB->xReleaseTime;
+
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF ) 
+		pxTCB->xRemainingWCET = pxTCB->xMaxExecTime;
+		#endif
 	}
 
 	/* Checks whether given task has missed deadline or not. */
@@ -587,7 +610,12 @@ static void prvSetFixedPriorities( void )
     
 		if( xCurrentTaskHandle != xSchedulerHandle && xCurrentTaskHandle != xTaskGetIdleTaskHandle() && flag == 1)
 		{
-			pxCurrentTask->xExecTime++;     
+			pxCurrentTask->xExecTime++;
+
+			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
+				pxCurrentTask->xRemainingWCET--;     
+				pxCurrentTask->xDensity = pxCurrentTask->xValue / pxCurrentTask->xRemainingWCET;
+			#endif
      
 			#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
 				if( pxCurrentTask->xMaxExecTime + 100 < pxCurrentTask->xExecTime )
@@ -623,20 +651,29 @@ void vSchedulerInit( void )
 }
 
 /* Check all the deadlines first and assign priority accordingly
-	All deadlines start at 0
-	First closest deadline gets assigned a high priority 
+	All deadlines start at 1
+	lowest deadline gets assigned a high priority 
 
 	Search for smallest absolute deadline in unsorted array */
-	/* WORKS for any slot in xTCB Array */
 #if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
 	void prvPrioritySet( void )
 	{
-		/* Set smallest abs deadline to first item in xTCB */
-		TickType_t xSmallestAbsDeadline = prvFindLargestValue();
-		/* Holds index of smallest abs deadline in xTCB */
-		BaseType_t xIndexOfSmallestAbsDeadline = 0;
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF )
+			/* Set smallest abs deadline to first item in xTCB */
+			TickType_t xSmallestAbsDeadline = prvFindLargestValue();
+			/* Holds index of smallest abs deadline in xTCB */
+			BaseType_t xIndexOfSmallestAbsDeadline = 0;
+		#endif
+
 		/* Highest priority to set task to */
 		BaseType_t xHighestPrio = 4;
+
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
+			/*highest density can start at 0 because density cannot be negative */
+			float xHighestDensity = 0.0; 
+			/* Index of highest density task */
+			BaseType_t xIndexOfHighestDensity = 0; 
+		#endif
 
 		for(BaseType_t xIndex = 0; xIndex < xTaskCounter; xIndex++)
 		{
@@ -647,107 +684,82 @@ void vSchedulerInit( void )
 			with the tick count), set smallest to that one and take index of it. 
 			Keep going until the end of the xTCBArray */ 
 			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF )
-				if((xTCBArray[xIndex].xAbsoluteDeadline <= xSmallestAbsDeadline)) /*&& (xTCBArray[xIndex].xWorkIsDone == pdFALSE))*/
+				if((xTCBArray[xIndex].xAbsoluteDeadline <= xSmallestAbsDeadline))
 				{
 					xSmallestAbsDeadline = xTCBArray[xIndex].xAbsoluteDeadline;
 					xIndexOfSmallestAbsDeadline = xIndex;
 				} 
 			#endif
+
+			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
+				if((xTCBArray[xIndex].xDensity >= xHighestDensity)) /*&& (xTCBArray[xIndex].xWorkIsDone == pdFALSE))*/
+				{
+					xHighestDensity = xTCBArray[xIndex].xDensity;
+					xIndexOfHighestDensity = xIndex;
+				} 
+			#endif
 		}
 
 		/*Set task at index with smallest abs deadline to highest priority */
-		vTaskPrioritySet(*xTCBArray[xIndexOfSmallestAbsDeadline].pxTaskHandle, xHighestPrio);
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF )
+			vTaskPrioritySet(*xTCBArray[xIndexOfSmallestAbsDeadline].pxTaskHandle, xHighestPrio);
+			/*Serial.print(xTCBArray[xIndexOfSmallestAbsDeadline].pcName); 
+			Serial.flush();*/
+		#endif
 
-		/*
-		Serial.println(xTCBArray[xIndexOfSmallestAbsDeadline].pcName); 
-		Serial.flush();*/
+		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
+			vTaskPrioritySet(*xTCBArray[xIndexOfHighestDensity].pxTaskHandle, xHighestPrio);
+			/*Serial.print(xTCBArray[xIndexOfHighestDensity].pcName); 
+			Serial.flush();*/
+		#endif
+		
 	}
-
+	
 	static TickType_t prvFindLargestValue ( void )
 	{
-		TickType_t xLargest = 0; 
+		TickType_t xLargest = 0;
 
 		for( BaseType_t xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 		{
-			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF )
-				if(xTCBArray[xIndex].xAbsoluteDeadline > xLargest && (xTCBArray[xIndex].xWorkIsDone == pdFALSE))
-				{
-					xLargest = xTCBArray[xIndex].xAbsoluteDeadline; 
-				}
-			#endif
-
-			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
-				if(xTCBArray[xIndex].xAbsoluteDeadline > xLargest)
-				{
-					xLargest = xTCBArray[xIndex].xAbsoluteDeadline; 
-				}
-			#endif
+			if(xTCBArray[xIndex].xAbsoluteDeadline > xLargest && xTCBArray[xIndex].xWorkIsDone == pdFALSE)
+			{
+				xLargest = xTCBArray[xIndex].xAbsoluteDeadline; 
+			}
 		}
 
 		return xLargest;
 	}
 
-	/* function that sorts the TCB array and assigns priorities based on absolute deadlines 
-	Only sorts and assigns TCB array, not Tasks being managed by frertos */
-	void prvAssignInitialPriority ( void )
+	/* sets the priority for the tas that will go first. 
+	i.e. i EDF and t1 has deadline of 3 and t2 has deadline of 6, t1 will be given highest priority*/
+	void prvSetInitialPriority ( void )
 	{
-		/*index of ask with shortest period. iterate through the array multiple times to assign priorities to ALL tasks*/
-		BaseType_t xIter = 0, xIndex = 0, xAssignIndex;
-		/*var to hold shortest period and the previous shortest*/
-		TickType_t xShortest;
-		/*TCB variable to hold temp*/
-		SchedTCB_t pxTCB_temp;
+		float xLargestDensity = 0.0; 
+		TickType_t xLargestAbsDeadline = 5000; /* initially set to a very high value so that no task can be above it */
+		BaseType_t xIndexOfLargest = 0;
 
-		#if( schedUSE_SCHEDULER_TASK == 1 )
-			BaseType_t xHighestPriority = schedSCHEDULER_PRIORITY; 
-		#else
-			BaseType_t xHighestPriority = configMAX_PRIORITIES;
-		#endif /* schedUSE_SCHEDULER_TASK */
-
-		/*sort the array in ASCEDNING ORDER (smallest to greatest period*/
-		for( xIter = 1; xIter < xTaskCounter; xIter++ )
+		for( BaseType_t xIndex = 0; xIndex < xTaskCounter; xIndex++ )
 		{
-			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF )
+			xTCBArray[xIndex].uxPriority = 1;
 
-			/*set xShortest to temporary value*/
-			pxTCB_temp = xTCBArray[xIter];
-			xShortest = xTCBArray[xIter].xAbsoluteDeadline;
-			xIndex = xIter - 1;
-			
-			/* search for shortest period */
-			while( xIndex >= 0 && xShortest <= xTCBArray[xIndex].xAbsoluteDeadline)
-			{
-				xTCBArray[xIndex + 1] = xTCBArray[xIndex];
-				xIndex--;
-			}
-			#endif /* schedSCHEDULING_POLICY */
+			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF )
+				if(xTCBArray[xIndex].xAbsoluteDeadline < xLargestAbsDeadline)
+				{
+					xLargestAbsDeadline = xTCBArray[xIndex].xAbsoluteDeadline; 
+					xIndexOfLargest = xIndex;
+				}
+			#endif
 
 			#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
-
-			pxTCB_temp = xTCBArray[xIter];
-			xShortest = xTCBArray[xIter].xRelativeDeadline;
-			xIndex = xIter - 1;
-
-			/* search for shortest relative deadline */
-			while( xIndex >= 0 && xShortest <= xTCBArray[xIndex].xRelativeDeadline)
-			{
-				xTCBArray[xIndex + 1] = xTCBArray[xIndex];
-				xIndex--;
-			}
-			
-			#endif /* schedSCHEDULING_POLICY */
-
-			xTCBArray[xIndex + 1] = pxTCB_temp;
-			/* your implementation goes here */	
+				if(xTCBArray[xIndex].xDensity >= xLargestDensity)
+				{
+					xLargestDensity = xTCBArray[xIndex].xDensity; 
+					xIndexOfLargest = xIndex;
+				}
+			#endif
 		}
 
-		/*assign priority from highest to lowest*/
-		/*MIGHT BE ABLE TO MOVE THIS UP TO NESTED FOR LOOP, BUT FIGURE IT OUT LATER*/
-		for( xAssignIndex = 0; xAssignIndex < xTaskCounter; xAssignIndex++ )
-		{
-			xTCBArray[xAssignIndex].uxPriority = xHighestPriority - 1;
-			xHighestPriority = xHighestPriority - 1;
-		}
+		xTCBArray[xIndexOfLargest].uxPriority = 4;
 	}
 #endif
 
@@ -761,7 +773,7 @@ void vSchedulerStart( void )
 
 	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_EDF || schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
 		/* Before tasks are created, sort them into their priority based off initial absolute deadlines */
-		prvAssignInitialPriority();
+		prvSetInitialPriority();
 	#endif /* schedSCHEDULING_POLICY */
 
 	#if( schedUSE_SCHEDULER_TASK == 1 )
@@ -769,7 +781,7 @@ void vSchedulerStart( void )
 	#endif /* schedUSE_SCHEDULER_TASK */
 
 	prvCreateAllTasks();
-	  
+	
 	xSystemStartTime = xTaskGetTickCount();
 	
 	vTaskStartScheduler();
