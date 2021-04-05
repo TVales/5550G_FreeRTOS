@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /* The scheduling policy can be chosen from one of these. */
-#define schedSCHEDULING_POLICY_RMS 0 	
+#define schedSCHEDULING_POLICY_RMS 0	
 #define schedSCHEDULING_POLICY_EDF 1	
 #define schedSCHEDULING_POLICY_HVDF 0
 /* Rate-monotonic scheduling */
@@ -83,7 +83,7 @@ void vSchedulerInit( void );
  * xDeadlineTick: Relative deadline given in software ticks.
  * */
 void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName, UBaseType_t uxStackDepth, void *pvParameters, UBaseType_t uxPriority,
-		TaskHandle_t *pxCreatedTask, TickType_t xPhaseTick, TickType_t xPeriodTick, TickType_t xMaxExecTimeTick, TickType_t xDeadlineTick );
+		TaskHandle_t *pxCreatedTask, TickType_t xPhaseTick, TickType_t xPeriodTick, TickType_t xMaxExecTimeTick, TickType_t xDeadlineTick, float xTaskValue );
 
 /* Deletes a periodic task associated with the given task handle. */
 void vSchedulerPeriodicTaskDelete( TaskHandle_t xTaskHandle );
