@@ -28,12 +28,12 @@ extern "C" {
 
 /* The scheduling policy can be chosen from one of these. */
 #define schedSCHEDULING_POLICY_RMS 0	
-#define schedSCHEDULING_POLICY_EDF 1	
-#define schedSCHEDULING_POLICY_HVDF 0
+#define schedSCHEDULING_POLICY_EDF 0	
+#define schedSCHEDULING_POLICY_HVDF 1
 /* Rate-monotonic scheduling */
 
 /* Configure scheduling policy by setting this define to the appropriate one. */
-#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_EDF
+#define schedSCHEDULING_POLICY schedSCHEDULING_POLICY_HVDF
 //schedSCHEDULING_POLICY_EDF
 
 /* Maximum number of periodic tasks that can be created. (Scheduler task is
@@ -55,6 +55,8 @@ extern "C" {
 * EDF scheduling policy, Timing-Error-Detection of execution time,
 * Timing-Error-Detection of deadline, Polling Server. */
 #define schedUSE_SCHEDULER_TASK 1
+
+#define schedScheduler_Overhead 0
 
 
 #if( schedUSE_SCHEDULER_TASK == 1 )

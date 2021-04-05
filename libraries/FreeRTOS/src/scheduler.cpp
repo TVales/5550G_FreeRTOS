@@ -562,9 +562,22 @@ static void prvSetFixedPriorities( void )
                     	prvSchedulerCheckTimingError( xTickCount, pxTCB );
                     } 
               	}
-			
 			#endif /* schedUSE_TIMING_ERROR_DETECTION_DEADLINE || schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME */
+			#if(schedScheduler_Overhead)
+				volatile TickType_t i, j;
 
+				i = xTaskGetTickCount();
+
+				while (1)
+				{
+					j = xTaskGetTickCount();
+
+					if ((j - i) >= pdMS_TO_TICKS(1000))
+					{
+						break;
+					}
+				}
+			#endif
 			ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
 		}
 	}
@@ -709,7 +722,7 @@ void vSchedulerInit( void )
 
 		#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_HVDF )
 			vTaskPrioritySet(*xTCBArray[xIndexOfHighestDensity].pxTaskHandle, xHighestPrio);
-			/*Serial.print(xTCBArray[xIndexOfHighestDensity].pcName); 
+			/*Serial.println(xTCBArray[xIndexOfHighestDensity].pcName); 
 			Serial.flush();*/
 		#endif
 		
