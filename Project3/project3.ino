@@ -117,7 +117,7 @@ int main( void )
 
   //1 = Task Set 1
   //2 = task Set 2
-  int TaskSet = 1;
+  int TaskSet = 2;
 
   //set up serial comms with board 
   Serial.begin(9600);
@@ -148,7 +148,7 @@ int main( void )
       vSchedulerPeriodicTaskCreate(testFunc1, "t1", configMINIMAL_STACK_SIZE, &c1, 1, &xHandle1, pdMS_TO_TICKS(0), pdMS_TO_TICKS(400), WCET_1, pdMS_TO_TICKS(400), 3.0);
       vSchedulerPeriodicTaskCreate(testFunc2, "t2", configMINIMAL_STACK_SIZE, &c2, 2, &xHandle2, pdMS_TO_TICKS(0), pdMS_TO_TICKS(200), WCET_2, pdMS_TO_TICKS(200), 6.0);
       vSchedulerPeriodicTaskCreate(testFunc3, "t3", configMINIMAL_STACK_SIZE, &c3, 3, &xHandle3, pdMS_TO_TICKS(0), pdMS_TO_TICKS(700), WCET_3, pdMS_TO_TICKS(700), 8.0);
-      vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_4, pdMS_TO_TICKS(1000), 10.0 );
+      vSchedulerPeriodicTaskCreate(testFunc4, "t4", configMINIMAL_STACK_SIZE, &c4, 4, &xHandle4, pdMS_TO_TICKS(0), pdMS_TO_TICKS(1000), WCET_4, pdMS_TO_TICKS(1000), 10.0);
       break;
   }
 
