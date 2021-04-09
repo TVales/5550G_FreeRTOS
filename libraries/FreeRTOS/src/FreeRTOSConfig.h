@@ -49,9 +49,9 @@
     #define configUSE_IDLE_HOOK             1
 #endif
 
-#define configUSE_TICK_HOOK                 0
+#define configUSE_TICK_HOOK                 1
 #define configCPU_CLOCK_HZ                  ( ( uint32_t ) F_CPU )          // This F_CPU variable set by the environment
-#define configMAX_PRIORITIES                4 
+#define configMAX_PRIORITIES                5 
 #define configIDLE_SHOULD_YIELD             1
 #define configMINIMAL_STACK_SIZE            ( 192 )
 #define configMAX_TASK_NAME_LEN             ( 8 )
@@ -63,8 +63,8 @@
 #define configUSE_16_BIT_TICKS              1
 
 #define configUSE_MUTEXES                   1
-#define configUSE_RECURSIVE_MUTEXES         1
-#define configUSE_COUNTING_SEMAPHORES       1
+#define configUSE_RECURSIVE_MUTEXES         0
+#define configUSE_COUNTING_SEMAPHORES       0
 #define configUSE_TIME_SLICING              1
 #define configUSE_QUEUE_SETS                0
 #define configUSE_MALLOC_FAILED_HOOK        1
@@ -99,9 +99,9 @@ to exclude the API function. */
 #define INCLUDE_vResumeFromISR                  1
 #define INCLUDE_xTaskDelayUntil                 1
 #define INCLUDE_vTaskDelay                      1
-#define INCLUDE_xTaskGetSchedulerState          0
-#define INCLUDE_xTaskGetIdleTaskHandle          0 // create an idle task handle.
-#define INCLUDE_xTaskGetCurrentTaskHandle       0
+#define INCLUDE_xTaskGetSchedulerState          1
+#define INCLUDE_xTaskGetIdleTaskHandle          1 // create an idle task handle.
+#define INCLUDE_xTaskGetCurrentTaskHandle       1
 #define INCLUDE_uxTaskGetStackHighWaterMark     1
 
 #define configMAX(a,b)  ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a > _b ? _a : _b; })

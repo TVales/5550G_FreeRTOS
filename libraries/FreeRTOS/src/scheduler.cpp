@@ -323,7 +323,7 @@ static void prvSetFixedPriorities( void )
 	SchedTCB_t *pxShortestTaskPointer, *pxTCB;
 
 	#if( schedUSE_SCHEDULER_TASK == 1 )
-		BaseType_t xHighestPriority = schedSCHEDULER_PRIORITY; 
+		BaseType_t xHighestPriority = schedSCHEDULER_PRIORITY - 1; 
 	#else
 		BaseType_t xHighestPriority = configMAX_PRIORITIES;
 	#endif /* schedUSE_SCHEDULER_TASK */
@@ -566,7 +566,7 @@ static void prvSetFixedPriorities( void )
 			pxCurrentTask->xExecTime++;     
      
 			#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
-            if( pxCurrentTask->xMaxExecTime <= pxCurrentTask->xExecTime )
+            if( pxCurrentTask->xMaxExecTime < pxCurrentTask->xExecTime )
             {
                 if( pdFALSE == pxCurrentTask->xMaxExecTimeExceeded )
                 {
