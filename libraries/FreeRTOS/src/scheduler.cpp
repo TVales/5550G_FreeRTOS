@@ -40,7 +40,8 @@ typedef struct xExtended_TCB
 	#endif /* schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME */
 	
 	/* add if you need anything else */	
-	
+	/*Value to hold if the mutex was taken or not*/
+	BaseType_t mutex_taken;
 } SchedTCB_t;
 
 
@@ -58,6 +59,9 @@ static TickType_t xSystemStartTime = 0;
 
 static void prvPeriodicTaskCode( void *pvParameters );
 static void prvCreateAllTasks( void );
+
+/*Variable to hold handle name of mutex*/
+static SemaphoreHandle_t mutex_lock;
 
 
 #if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS)
@@ -193,16 +197,53 @@ static void prvPeriodicTaskCode( void *pvParameters )
 	{
 		pxThisTask->xLastWakeTime = xSystemStartTime;
 	}
+
+	/*variable for wait time IN TICKS for mutex*/
+	TickType_t mutex_wait = 5;
 	
 	for( ; ; )
 	{	
 		pxThisTask->xWorkIsDone = pdFALSE;
 		Serial.print(pxThisTask->pcName);
 		Serial.print(" - ");
-		Serial.print(xTaskGetTickCount());
-		Serial.print("\n");
+		Serial.println(xTaskGetTickCount());
 		Serial.flush();
+
+		/*Return value of xSemaphoreTake...
+		* pdTRUE, mutex taken successfully
+		* pdFALSE, mutex is already taken
+		*/
+		pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock, mutex_wait);
+
+		if(pxThisTask->mutex_taken == pdTRUE)
+		{
+			Serial.print(pxThisTask->pcName);
+			Serial.println(" is TAKING mutex lock");
+			Serial.flush();
+		}
+		else
+		{
+			Serial.print(pxThisTask->pcName);
+			Serial.println(" is BLOCKED from taking mutex");
+			Serial.flush();
+
+			/*If take failed earlier because it was blocked, 
+			wait for it to finish then take it again*/
+			pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock, portMAX_DELAY);
+			Serial.println("Task 1 is TAKING mutex lock");
+		}
+
+		/*This represents the Resource that the tasks are using*/
 		pxThisTask->pvTaskCode( pvParameters );
+
+		if(pxThisTask->mutex_taken == pdTRUE)
+		{			
+			Serial.print(pxThisTask->pcName);
+			Serial.println(" is GIVING mutex lock");
+			Serial.flush();
+			xSemaphoreGive(mutex_lock);
+		}
+
 		pxThisTask->xWorkIsDone = pdTRUE;
 		pxThisTask->xExecTime = 0;  
         
@@ -241,7 +282,7 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	pxNewTCB->xExecTime = 0;
 	pxNewTCB->xMaxExecTime = xMaxExecTimeTick;
 
-
+	pxNewTCB->mutex_taken = pdFALSE;
     
 	#if( schedUSE_TCB_ARRAY == 1 )
 		pxNewTCB->xInUse = pdTRUE;
@@ -566,7 +607,7 @@ static void prvSetFixedPriorities( void )
 			pxCurrentTask->xExecTime++;     
      
 			#if( schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME == 1 )
-            if( pxCurrentTask->xMaxExecTime + 10 < pxCurrentTask->xExecTime )
+            if( pxCurrentTask->xMaxExecTime + 100 < pxCurrentTask->xExecTime )
             {
                 if( pdFALSE == pxCurrentTask->xMaxExecTimeExceeded )
                 {
@@ -602,6 +643,20 @@ void vSchedulerInit( void )
  * have been created with API function before calling this function. */
 void vSchedulerStart( void )
 {
+	/*Create Mutex Instance*/
+    mutex_lock = xSemaphoreCreateMutex();
+
+	if(mutex_lock != NULL)
+    {
+      Serial.println("Mutex for Resource 1 CREATED");
+      Serial.flush();
+    }
+    else
+    {
+      Serial.println("Mutex for Resource 1 NOT CREATED");
+      Serial.flush();
+    }
+
 	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 		prvSetFixedPriorities();	
 	#endif /* schedSCHEDULING_POLICY */
