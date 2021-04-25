@@ -12,6 +12,8 @@ TickType_t WCET_1 = pdMS_TO_TICKS(400);
 TickType_t WCET_2 = pdMS_TO_TICKS(300);
 TickType_t WCET_3 = pdMS_TO_TICKS(400);
 
+BaseType_t RM_PCP = 0;
+
 void loop() {}
 
 /*Task L - Low Priority*/
@@ -43,13 +45,37 @@ static void testFunc2( void *pvParameters )
 
   i = xTaskGetTickCount();
 
-  while (1)
+  if(RM_PCP == 1) /*Shared Resource S1 and S2 */
   {
-    j = xTaskGetTickCount();
-
-    if ((j - i) >= WCET_2)
+    while (1) /* S1 */
     {
-      break;
+      j = xTaskGetTickCount();
+  
+      if ((j - i) >= WCET_2/2)
+      {
+        break;
+      }
+    }
+    while (1) /* S2 */
+    {
+      j = xTaskGetTickCount();
+  
+      if ((j - i) >= WCET_2/2)
+      {
+        break;
+      }
+    }
+  }
+  else /* Normal PIP execution with only one task being used */
+  {
+    while (1)
+    {
+      j = xTaskGetTickCount();
+  
+      if ((j - i) >= WCET_2)
+      {
+        break;
+      }
     }
   }
 }
