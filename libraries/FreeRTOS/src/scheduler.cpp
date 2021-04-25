@@ -44,8 +44,6 @@ typedef struct xExtended_TCB
 	BaseType_t mutex_taken;
 } SchedTCB_t;
 
-
-
 #if( schedUSE_TCB_ARRAY == 1 )
 	static BaseType_t prvGetTCBIndexFromHandle( TaskHandle_t xTaskHandle );
 	static void prvInitTCBArray( void );
@@ -213,36 +211,41 @@ static void prvPeriodicTaskCode( void *pvParameters )
 		* pdTRUE, mutex taken successfully
 		* pdFALSE, mutex is already taken
 		*/
-		pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock, mutex_wait);
 
-		if(pxThisTask->mutex_taken == pdTRUE)
-		{
-			Serial.print(pxThisTask->pcName);
-			Serial.println(" is TAKING mutex lock");
-			Serial.flush();
-		}
-		else
-		{
-			Serial.print(pxThisTask->pcName);
-			Serial.println(" is BLOCKED from taking mutex");
-			Serial.flush();
+		#if( schedSCHEDULING_POLICY_RMPIP == 1 )
+			pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock, mutex_wait);
 
-			/*If take failed earlier because it was blocked, 
-			wait for it to finish then take it again*/
-			pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock, portMAX_DELAY);
-			Serial.println("Task 1 is TAKING mutex lock");
-		}
+			if(pxThisTask->mutex_taken == pdTRUE)
+			{
+				Serial.print(pxThisTask->pcName);
+				Serial.println(" is TAKING mutex lock");
+				Serial.flush();
+			}
+			else
+			{
+				Serial.print(pxThisTask->pcName);
+				Serial.println(" is BLOCKED from taking mutex");
+				Serial.flush();
+
+				/*If take failed earlier because it was blocked, 
+				wait for it to finish then take it again*/
+				pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock, portMAX_DELAY);
+				Serial.println("Task 1 is TAKING mutex lock");
+			}	
+		#endif
 
 		/*This represents the Resource that the tasks are using*/
 		pxThisTask->pvTaskCode( pvParameters );
 
-		if(pxThisTask->mutex_taken == pdTRUE)
-		{			
-			Serial.print(pxThisTask->pcName);
-			Serial.println(" is GIVING mutex lock");
-			Serial.flush();
-			xSemaphoreGive(mutex_lock);
-		}
+		#if( schedSCHEDULING_POLICY_RMPIP == 1 )
+			if(pxThisTask->mutex_taken == pdTRUE)
+			{			
+				Serial.print(pxThisTask->pcName);
+				Serial.println(" is GIVING mutex lock");
+				Serial.flush();
+				xSemaphoreGive(mutex_lock);
+			}
+		#endif
 
 		pxThisTask->xWorkIsDone = pdTRUE;
 		pxThisTask->xExecTime = 0;  
@@ -643,19 +646,21 @@ void vSchedulerInit( void )
  * have been created with API function before calling this function. */
 void vSchedulerStart( void )
 {
-	/*Create Mutex Instance*/
-    mutex_lock = xSemaphoreCreateMutex();
+	#if( schedSCHEDULING_POLICY_RMPIP == 1 )
+		/*Create Mutex Instance*/
+		mutex_lock = xSemaphoreCreateMutex();
 
-	if(mutex_lock != NULL)
-    {
-      Serial.println("Mutex for Resource 1 CREATED");
-      Serial.flush();
-    }
-    else
-    {
-      Serial.println("Mutex for Resource 1 NOT CREATED");
-      Serial.flush();
-    }
+		if(mutex_lock != NULL)
+		{
+		Serial.println("Mutex for Resource 1 CREATED");
+		Serial.flush();
+		}
+		else
+		{
+		Serial.println("Mutex for Resource 1 NOT CREATED");
+		Serial.flush();
+		}
+	#endif
 
 	#if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS )
 		prvSetFixedPriorities();	
