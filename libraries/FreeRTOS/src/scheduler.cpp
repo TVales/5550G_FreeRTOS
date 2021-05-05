@@ -40,8 +40,11 @@ typedef struct xExtended_TCB
 	#endif /* schedUSE_TIMING_ERROR_DETECTION_EXECUTION_TIME */
 	
 	/* add if you need anything else */	
-	/*Value to hold if the mutex was taken or not*/
-	BaseType_t mutex_taken;
+
+	#if( schedSCHEDULING_POLICY_RMPIP == 1 || schedSCHEDULING_POLICY_RMPCP == 1)
+		/*Value to hold if the mutex was taken or not*/
+		BaseType_t mutex_taken;
+	#endif
 } SchedTCB_t;
 
 #if( schedUSE_TCB_ARRAY == 1 )
@@ -59,8 +62,9 @@ static void prvPeriodicTaskCode( void *pvParameters );
 static void prvCreateAllTasks( void );
 
 /*Variable to hold handle name of mutex*/
-static SemaphoreHandle_t mutex_lock;
-
+#if( schedSCHEDULING_POLICY_RMPIP == 1 )
+	static SemaphoreHandle_t mutex_lock_RMPIP;
+#endif
 
 #if( schedSCHEDULING_POLICY == schedSCHEDULING_POLICY_RMS)
 	static void prvSetFixedPriorities( void );	
@@ -207,13 +211,12 @@ static void prvPeriodicTaskCode( void *pvParameters )
 		Serial.println(xTaskGetTickCount());
 		Serial.flush();
 
-		/*Return value of xSemaphoreTake...
-		* pdTRUE, mutex taken successfully
-		* pdFALSE, mutex is already taken
-		*/
-
 		#if( schedSCHEDULING_POLICY_RMPIP == 1 )
-			pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock, mutex_wait);
+			/*Return value of xSemaphoreTake...
+			* pdTRUE, mutex taken successfully
+			* pdFALSE, mutex is already taken
+			*/	
+			pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock_RMPIP, mutex_wait);
 
 			if(pxThisTask->mutex_taken == pdTRUE)
 			{
@@ -229,7 +232,7 @@ static void prvPeriodicTaskCode( void *pvParameters )
 
 				/*If take failed earlier because it was blocked, 
 				wait for it to finish then take it again*/
-				pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock, portMAX_DELAY);
+				pxThisTask->mutex_taken = xSemaphoreTake(mutex_lock_RMPIP, portMAX_DELAY);
 				Serial.println("Task 1 is TAKING mutex lock");
 			}	
 		#endif
@@ -243,7 +246,7 @@ static void prvPeriodicTaskCode( void *pvParameters )
 				Serial.print(pxThisTask->pcName);
 				Serial.println(" is GIVING mutex lock");
 				Serial.flush();
-				xSemaphoreGive(mutex_lock);
+				xSemaphoreGive(mutex_lock_RMPIP);
 			}
 		#endif
 
@@ -284,8 +287,6 @@ void vSchedulerPeriodicTaskCreate( TaskFunction_t pvTaskCode, const char *pcName
 	pxNewTCB->xWorkIsDone = pdFALSE;
 	pxNewTCB->xExecTime = 0;
 	pxNewTCB->xMaxExecTime = xMaxExecTimeTick;
-
-	pxNewTCB->mutex_taken = pdFALSE;
     
 	#if( schedUSE_TCB_ARRAY == 1 )
 		pxNewTCB->xInUse = pdTRUE;
@@ -648,9 +649,9 @@ void vSchedulerStart( void )
 {
 	#if( schedSCHEDULING_POLICY_RMPIP == 1 )
 		/*Create Mutex Instance*/
-		mutex_lock = xSemaphoreCreateMutex();
+		mutex_lock_RMPIP = xSemaphoreCreateMutex();
 
-		if(mutex_lock != NULL)
+		if(mutex_lock_RMPIP != NULL)
 		{
 		Serial.println("Mutex for Resource 1 CREATED");
 		Serial.flush();

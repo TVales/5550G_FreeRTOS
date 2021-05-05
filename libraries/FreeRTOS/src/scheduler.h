@@ -35,7 +35,7 @@ extern "C" {
 //schedSCHEDULING_POLICY_EDF
 
 /* Scheduling policy is according to RM PIP */
-#define schedSCHEDULING_POLICY_RMPIP 1
+#define schedSCHEDULING_POLICY_RMPIP 0
 
 /* Maximum number of periodic tasks that can be created. (Scheduler task is
  * not included) */
